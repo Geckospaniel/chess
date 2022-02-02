@@ -4,6 +4,9 @@
 #include "Application.hh"
 #include "../../Engine.hh"
 
+#include <vector>
+#include <utility>
+
 enum class WindowID
 {
 	Main
@@ -21,6 +24,9 @@ public:
 private:
 	Vector2 <size_t> selected;
 	Engine e;
+
+	void cacheMoves();
+	std::vector <std::pair <Vector2 <size_t>, MoveType>> cachedMoves;
 };
 
 #endif

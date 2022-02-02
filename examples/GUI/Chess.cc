@@ -56,22 +56,31 @@ void Chess::onRender()
 		}
 	}
 
-	e.showMoves(selected, [this, &tileSize](Vector2 <size_t> pos, MoveType type)
+	for(auto& cache : cachedMoves)
 	{
-		switch(type)
+		switch(cache.second)
 		{
 			case MoveType::Capture: window(WindowID::Main).setColor(255, 0, 0); break;
 			case MoveType::Move: window(WindowID::Main).setColor(0, 255, 0); break;
 			case MoveType::Check: window(WindowID::Main).setColor(255, 255, 0); break;
 		}
 
-		Vec2 origin = tileSize * pos.as <float> ();
+		Vec2 origin = tileSize * cache.first.as <float> ();
 		window(WindowID::Main).drawBox(origin, tileSize, false, 1);
 		window(WindowID::Main).drawLine(origin, origin + tileSize);
 		window(WindowID::Main).drawLine(origin + Vec2(tileSize.x, 0.0f), origin + Vec2(0.0f, tileSize.y));
-	});
+	}
 
 	window(WindowID::Main).render();
+}
+
+void Chess::cacheMoves()
+{
+	cachedMoves.clear();
+	e.showMoves(selected, [this](Vector2 <size_t> pos, MoveType type)
+	{
+		cachedMoves.push_back(std::make_pair(pos, type));
+	});
 }
 
 void Chess::onMouseClick(bool left, bool right)
@@ -81,18 +90,28 @@ void Chess::onMouseClick(bool left, bool right)
 		Vec2 tileSize = Vec2(1.0f, 1.0f) / Vec2(e.boardWidth, e.boardHeight);
 		Vec2 mouse = window(WindowID::Main).getMouse() / tileSize;
 		Vector2 <size_t> newSelection = mouse.as <size_t> ();
-
 		Engine::Tile current = e.at(newSelection.x, newSelection.y);
+
 		if(current.piece != PieceName::None && e.getCurrentTurn() == current.color)
+		{
 			selected = newSelection;
+			cacheMoves();
+		}
 
 		else
 		{
-			e.showMoves(selected, [this, &newSelection](Vector2 <size_t> pos, MoveType type)
+			Engine::Tile origin = e.at(selected.x, selected.y);
+
+			for(auto& cache : cachedMoves)
 			{
-				if(pos == newSelection && type != MoveType::Check)
+				if(cache.first == newSelection && cache.second != MoveType::Check)
+				{
+					//	FIXME for some reason this condition equals true multiple times occasionally
 					e.move(selected, newSelection);
-			});
+					cacheMoves();
+					break;
+				}
+			}
 		}
 	}
 }
