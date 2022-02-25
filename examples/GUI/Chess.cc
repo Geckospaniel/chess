@@ -11,7 +11,8 @@ Chess::~Chess() {}
 
 void Chess::onRender()
 {
-	Vec2 tileSize = Vec2(1.0f, 1.0f) / Vec2(e.boardWidth, e.boardHeight);
+	Vector2 <size_t> boardSize = e.getBoardSize();
+	Vec2 tileSize = Vec2(1.0f, 1.0f) / boardSize.as <float> ();
 	window(WindowID::Main).clear(199, 172, 143);
 
 	window(WindowID::Main).setColor(110, 79, 47);
@@ -19,9 +20,9 @@ void Chess::onRender()
 
 	Vec2 pieceSize = tileSize / 2;
 
-	for(size_t x = 0; x < e.boardWidth; x++, dark = !dark)
+	for(size_t x = 0; x < boardSize.x; x++, dark = !dark)
 	{
-		for(size_t y = 0; y < e.boardHeight; y++, dark = !dark)
+		for(size_t y = 0; y < boardSize.y; y++, dark = !dark)
 		{
 			if(dark)
 			{
@@ -87,7 +88,7 @@ void Chess::onMouseClick(bool left, bool right)
 {
 	if(left)
 	{
-		Vec2 tileSize = Vec2(1.0f, 1.0f) / Vec2(e.boardWidth, e.boardHeight);
+		Vec2 tileSize = Vec2(1.0f, 1.0f) / e.getBoardSize().as <float> ();
 		Vec2 mouse = window(WindowID::Main).getMouse() / tileSize;
 		Vector2 <size_t> newSelection = mouse.as <size_t> ();
 		Engine::Tile current = e.at(newSelection.x, newSelection.y);

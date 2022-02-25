@@ -44,33 +44,35 @@ public:
 
 	Tile at(size_t x, size_t y);
 	Color getCurrentTurn() { return currentTurn; }
+	Vector2 <size_t> getBoardSize() { return mainBoard.size; }
 
 	void move(const Vector2 <size_t>& from, const Vector2 <size_t>& to);
 
 	void showMoves(Vector2 <size_t> position,
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
-	constexpr static size_t boardWidth = 8;
-	constexpr static size_t boardHeight = 8;
-
 private:
 	struct Board
 	{
-		Tile data[boardWidth][boardHeight];
-
 		bool occupied(const Vector2 <size_t>& position);
 		bool isInside(const Vector2 <size_t>& position);
 
+		std::vector <std::vector <Tile>> data;
 		bool kingThreatened[2] { false, false };
+
 		Vector2 <size_t> kingPosition[2];
+		Vector2 <size_t> size;
 	};
 
-	void showMoves(Board& board, Vector2 <size_t> position,
+	void flagThreatenedKings(Board& board);
+	bool leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> to);
+
+	void showMoves(Board& board, Vector2 <size_t> position, bool protectKing,
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
 	void move(Board& board, const Vector2 <size_t>& from, const Vector2 <size_t>& to);
 
-	Color currentTurn;
+	Color currentTurn = Color::White;
 	std::vector <Board> boardBuffer;
 	Board mainBoard;
 };

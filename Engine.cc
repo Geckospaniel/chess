@@ -21,24 +21,24 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	for(auto& x : mainBoard.data)
-	{
-		for(auto& y : x)
-			y.piece = PieceName::None;
-	}
+	mainBoard.size.x = 8;
+	mainBoard.size.y = 8;
+	mainBoard.data.resize(mainBoard.size.x, std::vector <Tile> (mainBoard.size.y, { PieceName::None }));
 
-	size_t centerLeft = boardWidth / 2 - 1;
+	//	Left-side tile from the center
+	size_t centerLeft = mainBoard.size.x / 2 - 1;
 
-	for(size_t y = 1; y < boardHeight; y+=boardHeight - 3)
+	for(size_t y = 1; y < mainBoard.size.y; y += mainBoard.size.y - 3)
 	{
 		Color color = y != 1 ? Color::White : Color::Black;
 		size_t back = y != 1 ? y + 1 : y - 1;
 
 		//	Pawns
-		for(size_t x = 0; x < boardWidth; x++)
+		for(size_t x = 0; x < 8; x++)
 		{
-			mainBoard.data[x][y].color = color;
-			mainBoard.data[x][y].piece = PieceName::Pawn;
+			//	Because there's only 8 pawns, use centerLeft as an offset
+			mainBoard.data[centerLeft - 3 + x][y].color = color;
+			mainBoard.data[centerLeft - 3 + x][y].piece = PieceName::Pawn;
 		}
 
 		//	King
@@ -82,38 +82,14 @@ void Engine::move(Board& board, const Vector2 <size_t>& from, const Vector2 <siz
 
 	SDL_Log("Moved %s '%s' to %lu %lu", board.data[to.x][to.y].color == Color::White ? "White" : "Black", name(board.data[to.x][to.y].piece), to.x, to.y);
 
+	//	Cache the king position
 	if(board.data[to.x][to.y].piece == PieceName::King)
 		board.kingPosition[static_cast <size_t> (currentTurn)] = to;
 
-	for(auto& threatened : board.kingThreatened)
-		threatened = false;
+	//	Since basically any move can trigger a check, check for those checks
+	flagThreatenedKings(board);	
 
-	//	Ugly brute force to check if some piece can capture a king
-	for(size_t x = 0; x < boardWidth; x++)
-	{
-		for(size_t y = 0; y < boardHeight; y++)
-		{
-			Color c = board.data[x][y].color;
-			if(board.data[x][y].piece == PieceName::None)
-				continue;
-
-			SDL_Log("Testing %s '%s' at %lu %lu", board.data[x][y].color == Color::White ? "White" : "Black", name(board.data[x][y].piece), x, y);
-
-			showMoves(board, Vector2 <size_t> (x, y), [this, &board, c](Vector2 <size_t> pos, MoveType type)
-			{
-				Tile t = board.data[pos.x][pos.y];
-
-				if(c == t.color || type != MoveType::Capture)
-					return;
-
-				SDL_Log("Can capture %s '%s' at %lu %lu", t.color == Color::White ? "White" : "Black", name(t.piece), pos.x, pos.y);
-
-				if(t.piece == PieceName::King)
-					board.kingThreatened[static_cast <size_t> (t.color)] = true;
-			});
-		}
-	}
-
+	//	Update the turn
 	switch(currentTurn)
 	{
 		case Color::Black: currentTurn = Color::White; break;
@@ -130,12 +106,25 @@ void Engine::showMoves(Vector2 <size_t> position,
 			callback(mainBoard.kingPosition[i], MoveType::Check);
 	}
 
-	showMoves(mainBoard, position, callback);
+	showMoves(mainBoard, position, true, callback);
 }
 
-void Engine::showMoves(Board& board, Vector2 <size_t> position,
+void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing,
 						const std::function <void(Vector2 <size_t>, MoveType)>& callback)
 {
+	auto show = [this, &board, &callback, protectKing]
+	(Vector2 <size_t> from, Vector2 <size_t> to, MoveType m)
+	{
+		//	If there's a check that should not happen, don't reveal it
+		if(protectKing && leadsToCheck(board, from, to))
+		{
+			SDL_Log("Moving '%s' from (%lu, %lu) to (%lu, %lu) causes a check", name(board.data[from.x][from.y].piece), from.x, from.y, to.x, to.y);
+			return;
+		}
+
+		callback(to, m);
+	};
+
 	Tile t = board.data[position.x][position.y];
 
 	//	Some large number that's way larger than the board
@@ -151,12 +140,14 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position,
 		case PieceName::Pawn:
 		{
 			//	Get the middle point
-			size_t middle = boardHeight / 2 - (t.color != Color::White);
+			size_t middle = board.size.y / 2 - (t.color != Color::White);
 
 			//	Determine whether the pawn can move 1 or 2 steps
+			//	TODO this is a bit overcomplicated since you could just check if the pawn hasn't moved
 			steps = 1 + (t.color == Color::White ? (position.y - 2 >= middle) : (position.y + 2 <= middle));
 			int move = t.color == Color::White ? -1 : 1;
 
+			Vector2 <size_t> old = position;
 			for(size_t i = 0; i < steps && board.isInside(position); i++)
 			{
 				//	Captures can be done on the origin tile
@@ -168,18 +159,21 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position,
 						position + Vector2 <size_t> (1, move)
 					};
 
+					//	If a capture can be made, reveal it
 					for(auto& side : sides)
 					{
 						if(board.isInside(side) && board.occupied(side) && t.color != board.data[side.x][side.y].color)
-							callback(side, MoveType::Capture);
+							show(position, side, MoveType::Capture);
 					}
 				}
 
+				//	Move the pawn and make sure that it could actually move
 				position.y += move;
 				if(!board.isInside(position) || board.occupied(position))
 					break;
 
-				callback(position, MoveType::Move);
+				//	Reveal the pawn movement
+				show(old, position, MoveType::Move);
 			}
 
 			return;
@@ -195,26 +189,29 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position,
 			//	Hardcoded knight movements
 			const Vector2 <size_t> moves[]
 			{
-				position + Vector2 <size_t >(-1, -2), position + Vector2 <size_t >(1, -2),
-				position + Vector2 <size_t >(2, -1), position + Vector2 <size_t >(2, 1),
-				position + Vector2 <size_t >(1, 2), position + Vector2 <size_t >(-1, 2),
-				position + Vector2 <size_t >(-2, -1), position + Vector2 <size_t >(-2, 1),
-				position + Vector2 <size_t >(-1, 2)
+				position + Vector2 <size_t> (-1, -2), position + Vector2 <size_t> (1, -2),
+				position + Vector2 <size_t> (2, -1), position + Vector2 <size_t> (2, 1),
+				position + Vector2 <size_t> (1, 2), position + Vector2 <size_t> (-1, 2),
+				position + Vector2 <size_t> (-2, -1), position + Vector2 <size_t> (-2, 1),
+				position + Vector2 <size_t> (-1, 2)
 			};
 
+			//	Loop through each possible knight move
 			for(auto& move : moves)
 			{
 				if(board.isInside(move))
 				{
 					if(board.occupied(move))
 					{
+						//	Reveal a capture if the knight can make one
 						if(board.data[move.x][move.y].color != t.color)
-							callback(move, MoveType::Capture);
+							show(position, move, MoveType::Capture);
 
 						else continue;
 					}
 
-					else callback(move, MoveType::Move);
+					//	Reveal the knight movement
+					else show(position, move, MoveType::Move);
 				}
 			}
 
@@ -242,6 +239,9 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position,
 	size_t limit = 8;
 	size_t i = 0;
 
+	/*	Depending on whether straight or slant movement is needed,
+	 *	adjust the limit and offset to the appropriate values so that
+	 *	both or either are used in the loop below */
 	if(straight && slant);
 	else if(straight) limit = 4;
 	else if(slant) i = 4;
@@ -253,21 +253,85 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position,
 		for(size_t j = 0; j < steps; j++)
 		{
 			current += directions[i];
+
 			if(!board.isInside(current))
 				break;
 
 			if(board.occupied(current))
 			{
+				//	If a capture is available reveal it
 				if(board.data[current.x][current.y].color != t.color)
 				{
-					callback(current, MoveType::Capture);
+					show(position, current, MoveType::Capture);
 					break;
 				}
 
 				else break;
 			}
 
-			callback(current, MoveType::Move);
+			//	Reveal the movement
+			show(position, current, MoveType::Move);
+		}
+	}
+}
+
+bool Engine::leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> to)
+{
+	//	Save the old state
+	Tile oldFromTile = board.data[from.x][from.y];
+	Tile oldToTile = board.data[to.x][to.y];
+	bool oldThreatens[2] { board.kingThreatened[0], board.kingThreatened[1] };
+
+	//	Perform a fake move
+	board.data[to.x][to.y] = board.data[from.x][from.y];
+	board.data[from.x][from.y].piece = PieceName::None;
+
+	//	Check if any kings are threatened
+	flagThreatenedKings(board);
+	bool result = board.kingThreatened[static_cast <size_t> (currentTurn)];
+
+	//	Reset the old state
+	board.data[from.x][from.y] = oldFromTile;
+	board.data[to.x][to.y] = oldToTile;
+
+	//	Reset the old threatens
+	for(size_t i = 0; i < 2; i++)
+		board.kingThreatened[i] = oldThreatens[i];
+
+	//	Is the king of the current turn threatened
+	return result;
+}
+
+void Engine::flagThreatenedKings(Board& board)
+{
+	for(auto& threatened : board.kingThreatened)
+		threatened = false;
+
+	//	Ugly brute force to check if some piece can capture a king
+	for(size_t x = 0; x < board.size.x; x++)
+	{
+		for(size_t y = 0; y < board.size.y; y++)
+		{
+			Color c = board.data[x][y].color;
+
+			//	Ignore tiles without a piece
+			if(board.data[x][y].piece == PieceName::None)
+				continue;
+
+			//	Get every move that the piece in this tile can make
+			showMoves(board, Vector2 <size_t> (x, y), false,
+			[this, &board, c](Vector2 <size_t> pos, MoveType type)
+			{
+				Tile t = board.data[pos.x][pos.y];
+
+				//	If the colors match or there's no capture, the move is irrelevant
+				if(c == t.color || type != MoveType::Capture)
+					return;
+
+				//	Is the target piece a king
+				if(t.piece == PieceName::King)
+					board.kingThreatened[static_cast <size_t> (t.color)] = true;
+			});
 		}
 	}
 }
@@ -280,5 +344,5 @@ bool Engine::Board::occupied(const Vector2 <size_t>& position)
 bool Engine::Board::isInside(const Vector2 <size_t>& position)
 {
 	return	position >= Vector2 <size_t> () && 
-			position < Vector2 <size_t> (Engine::boardWidth, Engine::boardHeight);
+			position < size;
 }
