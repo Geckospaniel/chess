@@ -25,12 +25,6 @@ enum class MoveType
 	Check
 };
 
-enum class Color
-{
-	White,
-	Black
-};
-
 class Engine
 {
 public:
@@ -38,12 +32,14 @@ public:
 
 	struct Tile
 	{
+		Tile(PieceName piece, size_t id) : piece(piece), playerID(id) {}
+
 		PieceName piece;
-		Color color;
+		size_t playerID;
 	};
 
 	Tile at(size_t x, size_t y);
-	Color getCurrentTurn() { return currentTurn; }
+	size_t getCurrentTurn() { return currentPlayer; }
 	Vector2 <size_t> getBoardSize() { return mainBoard.size; }
 
 	void move(const Vector2 <size_t>& from, const Vector2 <size_t>& to);
@@ -52,18 +48,27 @@ public:
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
 private:
+	struct Player
+	{
+		size_t pawnSpawn;
+		int pawnDirection;
+
+		bool kingThreatened = false;
+		Vector2 <size_t> kingPosition;
+	};
+
 	struct Board
 	{
 		bool occupied(const Vector2 <size_t>& position);
 		bool isInside(const Vector2 <size_t>& position);
 
+		Tile& at(const Vector2 <size_t>& position);
 		std::vector <std::vector <Tile>> data;
-		bool kingThreatened[2] { false, false };
 
-		Vector2 <size_t> kingPosition[2];
 		Vector2 <size_t> size;
 	};
 
+	void createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle);
 	void flagThreatenedKings(Board& board);
 	bool leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> to);
 
@@ -72,8 +77,10 @@ private:
 
 	void move(Board& board, const Vector2 <size_t>& from, const Vector2 <size_t>& to);
 
-	Color currentTurn = Color::White;
+	std::vector <Player> players;
 	std::vector <Board> boardBuffer;
+
+	size_t currentPlayer = 0;
 	Board mainBoard;
 };
  

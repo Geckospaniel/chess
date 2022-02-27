@@ -51,7 +51,7 @@ void Chess::onRender()
 				default: continue;
 			}
 
-			unsigned char color = (current.color == Color::White) * 255;
+			unsigned char color = (current.playerID == 0) * 255;
 			window(WindowID::Main).setColor(color, color, color);
 			BitImage::render(window(WindowID::Main), tileSize * Vec2(x, y) + (pieceSize / 2), pieceSize, value);
 		}
@@ -93,7 +93,9 @@ void Chess::onMouseClick(bool left, bool right)
 		Vector2 <size_t> newSelection = mouse.as <size_t> ();
 		Engine::Tile current = e.at(newSelection.x, newSelection.y);
 
-		if(current.piece != PieceName::None && e.getCurrentTurn() == current.color)
+		SDL_Log("Player ID is %lu", current.playerID);
+
+		if(current.piece != PieceName::None && e.getCurrentTurn() == current.playerID)
 		{
 			selected = newSelection;
 			cacheMoves();
