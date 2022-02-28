@@ -38,9 +38,9 @@ Engine::Engine()
 	Vector2 <size_t> middle(centerLeft, mainBoard.size.y / 2);
 
 	createPlayer(kingPos1, middle);
-	//createPlayer(kingPos2, middle);
-	//createPlayer(kingPos3, middle);
-	//createPlayer(kingPos4, middle);
+	createPlayer(kingPos2, middle);
+	createPlayer(kingPos3, middle);
+	createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle)
@@ -68,8 +68,8 @@ void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle
 	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
-	//for(size_t x = 0; x < 8; x++)
-	//	mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
+	for(size_t x = 0; x < 8; x++)
+		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
@@ -79,7 +79,7 @@ void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle
 	mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
 
 	//	Rooks, Bishops and Knights
-	for(int i = 3; i <= 3; i++)
+	for(int i = 1; i <= 3; i++)
 	{
 		//	Because of the way the enum is ordered, we can initialize these pieces in a loop
 		PieceName piece = static_cast <PieceName> (static_cast <int> (PieceName::Pawn) + i);
@@ -436,7 +436,7 @@ bool Engine::canCastle(Board& board, Player& player, Vector2 <size_t>& position,
 		position += (player.inverseDirection) * multiplier;
 
 		//	Forbid castling when some piece blocks it
-		if(i > 0 && i < steps - 1 && board.occupied(position))
+		if(i < steps - 1 && board.occupied(position))
 			return false;
 
 		//	Forbid  castling when some piece intercepts it
