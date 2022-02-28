@@ -5,11 +5,11 @@ OBJECT_DEBUG	=	$(addprefix obj/debug/,$(addsuffix .o,$(SOURCE)))
 OBJECT_RELEASE	=	$(addprefix obj/release/,$(addsuffix .o,$(SOURCE)))
 
 debug:	obj/ $(OBJECT_DEBUG)
-	make -C ../..
+	make -C ../.. debug
 	@g++ -o x $(OBJECT_DEBUG) -lSDL2 ../../obj/debug/*.cc.o
 
 release:	obj/ $(OBJECT_RELEASE)
-	make -C ../..
+	make -C ../.. release
 	@g++ -o x $(OBJECT_RELEASE) -lSDL2 ../../obj/release/*.cc.o
 
 obj/debug/%.cc.o:	%.cc $(HEADER)

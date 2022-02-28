@@ -4,9 +4,9 @@ SOURCE	=	$(wildcard *.cc)
 OBJECT_DEBUG	=	$(addprefix obj/debug/,$(addsuffix .o,$(SOURCE)))
 OBJECT_RELEASE	=	$(addprefix obj/release/,$(addsuffix .o,$(SOURCE)))
 
-debug: $(OBJECT_DEBUG)
+debug: obj/ $(OBJECT_DEBUG)
 
-release: $(OBJECT_RELEASE)
+release: obj/ $(OBJECT_RELEASE)
 
 obj/debug/%.cc.o:	%.cc $(HEADER)
 	@echo "Building $< in debug mode"
