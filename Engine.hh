@@ -81,7 +81,7 @@ private:
 	void showMoves(Board& board, Vector2 <size_t> position, bool protectKing,
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
-	void move(Board& board, const Vector2 <size_t>& from, const Vector2 <size_t>& to);
+	void move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> to);
 
 	std::vector <Player> players;
 	std::vector <Board> boardBuffer;

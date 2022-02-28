@@ -38,9 +38,9 @@ Engine::Engine()
 	Vector2 <size_t> middle(centerLeft, mainBoard.size.y / 2);
 
 	createPlayer(kingPos1, middle);
-	createPlayer(kingPos2, middle);
-	createPlayer(kingPos3, middle);
-	createPlayer(kingPos4, middle);
+	//createPlayer(kingPos2, middle);
+	//createPlayer(kingPos3, middle);
+	//createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle)
@@ -68,8 +68,8 @@ void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle
 	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
-	for(size_t x = 0; x < 8; x++)
-		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
+	//for(size_t x = 0; x < 8; x++)
+	//	mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
@@ -79,7 +79,7 @@ void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle
 	mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
 
 	//	Rooks, Bishops and Knights
-	for(int i = 1; i <= 3; i++)
+	for(int i = 3; i <= 3; i++)
 	{
 		//	Because of the way the enum is ordered, we can initialize these pieces in a loop
 		PieceName piece = static_cast <PieceName> (static_cast <int> (PieceName::Pawn) + i);
@@ -100,20 +100,32 @@ void Engine::move(const Vector2 <size_t>& from, const Vector2 <size_t>& to)
 	move(mainBoard, from, to);
 }
 
-void Engine::move(Board& board, const Vector2 <size_t>& from, const Vector2 <size_t>& to)
+void Engine::move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> to)
 {
-	board.at(to) = board.at(from);
-	board.at(from).piece = PieceName::None;
-
 	//	Cache the king position
-	if(board.at(to).piece == PieceName::King)
+	if(board.at(from).piece == PieceName::King)
 	{
 		players[currentPlayer].kingPosition = to;
 		players[currentPlayer].kingMoved = true;
+
+		//	Handle the king castling
+		if(board.at(to).piece == PieceName::Rook)
+		{
+			/*	Are the king and the rook moving upwards, downwards, left or right?
+			 *	We can get the shift by multiplying the inversed direction with
+			 *	a positive or a negative value depending on whether the rook is
+			 *	kingside or queenside */
+			Vector2 <int> shift = players[currentPlayer].inverseDirection * (to <= from ? +1 : -1);
+
+			//	Move the rook and shift the king position backwards
+			board.at(to + shift * 2) = board.at(to);
+			board.at(to) = Tile(PieceName::None, 0);
+			to += shift;
+		}
 	}
 
 	//	Check if rooks have moved
-	else if(board.at(to).piece == PieceName::Rook)
+	else if(board.at(from).piece == PieceName::Rook)
 	{
 		Player& player = players[currentPlayer];
 
@@ -125,6 +137,9 @@ void Engine::move(Board& board, const Vector2 <size_t>& from, const Vector2 <siz
 		else if(from == player.pawnSpawnEnd - player.pawnDirection)
 			player.rookMoved[1] = true;
 	}
+
+	board.at(to) = board.at(from);
+	board.at(from).piece = PieceName::None;
 
 	//	Since basically any move can trigger a check, check for those checks
 	flagThreatenedKings(board);	
@@ -379,11 +394,6 @@ void Engine::flagThreatenedKings(Board& board)
 			//	Ignore tiles without a piece
 			if(board.data[x][y].piece == PieceName::None)
 				continue;
-
-			if(board.data[x][y].piece == PieceName::Rook)
-			{
-				SDL_Log("Testing rook at (%lu, %lu)", x, y);
-			}
 
 			//	Get every move that the piece in this tile can make
 			showMoves(board, Vector2 <size_t> (x, y), false,
