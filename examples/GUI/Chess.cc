@@ -95,32 +95,30 @@ void Chess::onMouseClick(bool left, bool right)
 	if(left)
 	{
 		Vec2 tileSize = Vec2(1.0f, 1.0f) / e.getBoardSize().as <float> ();
-		Vec2 mouse = window(WindowID::Main).getMouse() / tileSize;
-		Vector2 <size_t> newSelection = mouse.as <size_t> ();
-		Engine::Tile current = e.at(newSelection.x, newSelection.y);
+		Vector2 <size_t> newSelection = (window(WindowID::Main).getMouse() / tileSize).as <size_t> ();
 
-		SDL_Log("Player ID is %lu", current.playerID);
+		size_t oldTurn = e.getCurrentTurn();
+
+		for(auto& cache : cachedMoves)
+		{
+			if(cache.first == newSelection && cache.second != MoveType::Check)
+			{
+				//	FIXME for some reason this condition equals true multiple times occasionally
+				e.move(selected, newSelection);
+				cacheMoves();
+				break;
+			}
+		}
+
+		if(e.getCurrentTurn() != oldTurn)
+			return;
+
+		Engine::Tile current = e.at(newSelection.x, newSelection.y);
 
 		if(current.piece != PieceName::None && e.getCurrentTurn() == current.playerID)
 		{
 			selected = newSelection;
 			cacheMoves();
-		}
-
-		else
-		{
-			Engine::Tile origin = e.at(selected.x, selected.y);
-
-			for(auto& cache : cachedMoves)
-			{
-				if(cache.first == newSelection && cache.second != MoveType::Check)
-				{
-					//	FIXME for some reason this condition equals true multiple times occasionally
-					e.move(selected, newSelection);
-					cacheMoves();
-					break;
-				}
-			}
 		}
 	}
 }
