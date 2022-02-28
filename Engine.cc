@@ -102,12 +102,29 @@ void Engine::move(const Vector2 <size_t>& from, const Vector2 <size_t>& to)
 
 void Engine::move(Board& board, const Vector2 <size_t>& from, const Vector2 <size_t>& to)
 {
-	board.data[to.x][to.y] = board.data[from.x][from.y];
-	board.data[from.x][from.y].piece = PieceName::None;
+	board.at(to) = board.at(from);
+	board.at(from).piece = PieceName::None;
 
 	//	Cache the king position
-	if(board.data[to.x][to.y].piece == PieceName::King)
+	if(board.at(to).piece == PieceName::King)
+	{
 		players[currentPlayer].kingPosition = to;
+		players[currentPlayer].kingMoved = true;
+	}
+
+	//	Check if rooks have moved
+	else if(board.at(to).piece == PieceName::Rook)
+	{
+		Player& player = players[currentPlayer];
+
+		//	Has the kingside rook moved
+		if(from == player.pawnSpawnStart - player.pawnDirection)
+			player.rookMoved[0] = true;
+
+		//	Has the queenside rook moved
+		else if(from == player.pawnSpawnEnd - player.pawnDirection)
+			player.rookMoved[1] = true;
+	}
 
 	//	Since basically any move can trigger a check, check for those checks
 	flagThreatenedKings(board);	
@@ -161,7 +178,8 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing
 		case PieceName::Pawn:
 		{
 			//	Determine whether the pawn can move 1 or 2 steps
-			steps = 1 + (position >= players[t.playerID].pawnSpawnStart && position <= players[t.playerID].pawnSpawnEnd);
+			steps = 1 + (position >= players[t.playerID].pawnSpawnStart &&
+						 position <= players[t.playerID].pawnSpawnEnd);
 
 			Vector2 <int>& direction = players[t.playerID].pawnDirection;
 			Vector2 <size_t> current = position;
@@ -200,7 +218,30 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing
 		case PieceName::Rook: straight = true; break;
 		case PieceName::Bishop: slant = true; break;
 		case PieceName::Queen: slant = true; straight = true; break;
-		case PieceName::King: steps = 1; slant = true; straight = true; break;
+
+		case PieceName::King:
+		{
+			steps = 1;
+			slant = true;
+			straight = true;
+
+			//	Try castling if king isn't being threated and it hasn't moved
+			if(!players[t.playerID].kingThreatened && protectKing && !players[t.playerID].kingMoved)
+			{
+				Vector2 <size_t> queenSide = position;
+				Vector2 <size_t> kingSide = position;
+
+				//	Can the king castle on kingside
+				if(canCastle(board, players[t.playerID], kingSide, false))
+					show(position, kingSide, MoveType::Move);
+
+				//	Can the king castle on queenside
+				if(canCastle(board, players[t.playerID], queenSide, true))
+					show(position, queenSide, MoveType::Move);
+			}
+
+			break;
+		}
 
 		case PieceName::Knight:
 		{
@@ -299,10 +340,9 @@ bool Engine::leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> 
 	Tile oldFromTile = board.at(from);
 	Tile oldToTile = board.at(to);
 
-	//	Save the old check information
-	std::vector <bool> oldThreatens(players.size());
-	for(size_t i = 0; i < players.size(); i++)
-		oldThreatens[i] = players[i].kingThreatened;
+	//	FIXME this is rather stupid because it copies unnecessary things
+	//	Save the player states
+	std::vector <Player> oldPlayerStates = players;
 
 	//	Perform a fake move
 	board.at(to) = board.at(from);
@@ -316,9 +356,8 @@ bool Engine::leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> 
 	board.data[from.x][from.y] = oldFromTile;
 	board.data[to.x][to.y] = oldToTile;
 
-	//	Reset the old threatens
-	for(size_t i = 0; i < players.size(); i++)
-		players[i].kingThreatened = oldThreatens[i];
+	//	Reset the old player states
+	players = oldPlayerStates;
 
 	//	Is the king of the current turn threatened
 	return result;
@@ -341,6 +380,11 @@ void Engine::flagThreatenedKings(Board& board)
 			if(board.data[x][y].piece == PieceName::None)
 				continue;
 
+			if(board.data[x][y].piece == PieceName::Rook)
+			{
+				SDL_Log("Testing rook at (%lu, %lu)", x, y);
+			}
+
 			//	Get every move that the piece in this tile can make
 			showMoves(board, Vector2 <size_t> (x, y), false,
 			[this, &board, playerID](Vector2 <size_t> pos, MoveType type)
@@ -357,6 +401,40 @@ void Engine::flagThreatenedKings(Board& board)
 			});
 		}
 	}
+}
+
+bool Engine::canCastle(Board& board, Player& player, Vector2 <size_t>& position, bool queenSide)
+{
+	//	If the rook on the given side has moved, no castling can happen
+	if(player.rookMoved[queenSide])
+		return false;
+
+	//	How many steps until the king reaches the rook
+	size_t steps = 3 + queenSide;
+
+	//	Is the king going left or right
+	int multiplier = queenSide ? +1 : -1;
+	Vector2 <size_t> originalPosition = position;
+
+	/*	We need to check if any enemy piece intercepts the path
+	 *	from the king to the rook. Let's implement a spaghetti
+	 *	solution and simulate the king going towards the rook. If
+	 *	any checks happen, the king cannot castle */
+	for(size_t i = 0; i < steps; i++)
+	{
+		//	Move the king
+		position += (player.inverseDirection) * multiplier;
+
+		//	Forbid castling when some piece blocks it
+		if(i > 0 && i < steps - 1 && board.occupied(position))
+			return false;
+
+		//	Forbid  castling when some piece intercepts it
+		if(leadsToCheck(board, originalPosition, position))
+			return false;
+	}
+
+	return true;
 }
 
 Engine::Tile& Engine::Board::at(const Vector2 <size_t>& position)
