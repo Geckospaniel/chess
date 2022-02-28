@@ -51,8 +51,14 @@ void Chess::onRender()
 				default: continue;
 			}
 
-			unsigned char color = (current.playerID == 0) * 255;
-			window(WindowID::Main).setColor(color, color, color);
+			switch(current.playerID)
+			{
+				case 0: window(WindowID::Main).setColor(255, 255, 255); break;
+				case 1: window(WindowID::Main).setColor(0, 0, 0); break;
+				case 2: window(WindowID::Main).setColor(0, 255, 255); break;
+				case 3: window(WindowID::Main).setColor(255, 0, 255); break;
+			}
+
 			BitImage::render(window(WindowID::Main), tileSize * Vec2(x, y) + (pieceSize / 2), pieceSize, value);
 		}
 	}

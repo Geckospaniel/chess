@@ -51,10 +51,14 @@ private:
 	struct Player
 	{
 		size_t pawnSpawn;
-		int pawnDirection;
-
 		bool kingThreatened = false;
+
 		Vector2 <size_t> kingPosition;
+		Vector2 <int> inverseDirection;
+		Vector2 <int> pawnDirection;
+
+		Vector2 <size_t> pawnSpawnStart;
+		Vector2 <size_t> pawnSpawnEnd;
 	};
 
 	struct Board

@@ -1,6 +1,8 @@
 #include "Engine.hh"
 #include <SDL2/SDL_log.h>
 
+#include <cmath>
+
 const char* name(PieceName name)
 {
 	const char* n;
@@ -21,19 +23,24 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 8;
-	mainBoard.size.y = 8;
+	mainBoard.size.x = 12;
+	mainBoard.size.y = 12;
 	mainBoard.data.resize(mainBoard.size.x, std::vector <Tile> (mainBoard.size.y, { PieceName::None, 0 }));
 
 	//	Left-side tile from the center
 	size_t centerLeft = mainBoard.size.x / 2 - 1;
 
-	Vector2 <size_t> kingPos(centerLeft, 0);
+	Vector2 <size_t> kingPos1(centerLeft, 0);
 	Vector2 <size_t> kingPos2(centerLeft, mainBoard.size.y - 1);
+	Vector2 <size_t> kingPos3(0, mainBoard.size.y / 2 - 1);
+	Vector2 <size_t> kingPos4(mainBoard.size.x - 1, mainBoard.size.y / 2 - 1);
+
 	Vector2 <size_t> middle(centerLeft, mainBoard.size.y / 2);
 
+	createPlayer(kingPos1, middle);
 	createPlayer(kingPos2, middle);
-	createPlayer(kingPos, middle);
+	createPlayer(kingPos3, middle);
+	createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle)
@@ -42,30 +49,43 @@ void Engine::createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle
 	players.push_back({});
 	Player& player = players.back();
 
-	player.pawnDirection = kingPosition.y < middle.y ? +1 : -1;
-	SDL_Log("Pawn direction is %d", player.pawnDirection);
+	//	Calculate a direction vector from the king to the middle
+	Vector2 <int> sub = middle.as <int> () - kingPosition.as <int> ();
+	float angle = atan2(sub.y, sub.x);
+	player.pawnDirection = Vector2 <int> (round(cos(angle)), round(sin(angle)));
 
-	Vector2 <size_t> pawnOffset = kingPosition + Vector2 <size_t> (-3, player.pawnDirection);
-	player.pawnSpawn = pawnOffset.y;
+	//	Invert the direction vector
+	player.inverseDirection = Vector2 <int> (player.pawnDirection.y, player.pawnDirection.x);
+
+	/*	Because we use pawnDirection and inverseDirection to place the pieces, the
+	 *	pieces will be mirrored relative to other player's pieces. If x or y
+	 *	is negative, making them positive will fix the mirroring issue */
+	if(player.inverseDirection.x < 0) player.inverseDirection.x = -player.inverseDirection.x;
+	else if(player.inverseDirection.y < 0) player.inverseDirection.y = -player.inverseDirection.y;
+
+	//	Define a line where the pawns spawn. This is used to determine if they can move 2 spaces
+	player.pawnSpawnStart = kingPosition + player.pawnDirection + (player.inverseDirection * -3);
+	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
 	for(size_t x = 0; x < 8; x++)
-		mainBoard.data[pawnOffset.x + x][pawnOffset.y] = Tile(PieceName::Pawn, id);
+		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
 	player.kingPosition = kingPosition;
 
 	//	Queen
-	mainBoard.data[kingPosition.x + 1][kingPosition.y] = Tile(PieceName::Queen, id);
+	mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
 
 	//	Rooks, Bishops and Knights
 	for(int i = 1; i <= 3; i++)
 	{
+		//	Because of the way the enum is ordered, we can initialize these pieces in a loop
 		PieceName piece = static_cast <PieceName> (static_cast <int> (PieceName::Pawn) + i);
 
-		mainBoard.data[kingPosition.x + 1 + i][kingPosition.y] = Tile(piece, id);
-		mainBoard.data[kingPosition.x - i][kingPosition.y] = Tile(piece, id);
+		mainBoard.at(kingPosition + (player.inverseDirection * (1 + i))) = Tile(piece, id);
+		mainBoard.at(kingPosition + (player.inverseDirection * (-i))) = Tile(piece, id);
 	}
 }
 
@@ -141,10 +161,11 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing
 		case PieceName::Pawn:
 		{
 			//	Determine whether the pawn can move 1 or 2 steps
-			steps = 1 + (position.y == players[t.playerID].pawnSpawn);
-			int move = players[t.playerID].pawnDirection;
+			steps = 1 + (position >= players[t.playerID].pawnSpawnStart && position <= players[t.playerID].pawnSpawnEnd);
 
-			Vector2 <size_t> old = position;
+			Vector2 <int>& direction = players[t.playerID].pawnDirection;
+			Vector2 <size_t> current = position;
+
 			for(size_t i = 0; i < steps && board.isInside(position); i++)
 			{
 				//	Captures can be done on the origin tile
@@ -152,8 +173,8 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing
 				{
 					Vector2 <size_t> sides[2]
 					{
-						position + Vector2 <size_t> (-1, move),
-						position + Vector2 <size_t> (1, move)
+						current + direction + players[t.playerID].inverseDirection,
+						current + direction - players[t.playerID].inverseDirection
 					};
 
 					//	If a capture can be made, reveal it
@@ -165,12 +186,12 @@ void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing
 				}
 
 				//	Move the pawn and make sure that it could actually move
-				position.y += move;
-				if(!board.isInside(position) || board.occupied(position))
+				current += direction;
+				if(!board.isInside(current.as <size_t> ()) || board.occupied(current.as <size_t> ()))
 					break;
 
 				//	Reveal the pawn movement
-				show(old, position, MoveType::Move);
+				show(position, current.as <size_t> (), MoveType::Move);
 			}
 
 			return;
