@@ -143,6 +143,9 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 	//	Since basically any move can trigger a check, check for those checks
 	flagThreatenedKings(board);	
 
+	//	Add this move to the history
+	moveHistory.emplace_back(from, to, board.at(to));
+
 	//	Update the turn
 	if(++currentPlayer >= players.size())
 		currentPlayer = 0;

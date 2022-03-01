@@ -73,6 +73,17 @@ private:
 		Vec2s size;
 	};
 
+	struct HistoryEntry
+	{
+		HistoryEntry(Vec2s from, Vec2s to, Tile change)
+			: from(from), to(to), change(change) {}
+
+		Vec2s from;
+		Vec2s to;
+
+		Tile change;
+	};
+
 	void createPlayer(Vec2s kingPosition, Vec2s middle);
 	void flagThreatenedKings(Board& board);
 	bool leadsToCheck(Board& board, Vec2s from, Vec2s to);
@@ -84,6 +95,7 @@ private:
 	void move(Board& board, const Vec2s& from, Vec2s to);
 
 	std::vector <Player> players;
+	std::vector <HistoryEntry> moveHistory;
 
 	size_t currentPlayer = 0;
 	Board mainBoard;
