@@ -118,8 +118,7 @@ void Engine::move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> t
 			Vector2 <int> shift = players[currentPlayer].inverseDirection * (to <= from ? +1 : -1);
 
 			//	Move the rook and shift the king position backwards
-			board.at(to + shift * 2) = board.at(to);
-			board.at(to) = Tile(PieceName::None, 0);
+			move(board, to, to + shift * 2);
 			to += shift;
 		}
 	}
