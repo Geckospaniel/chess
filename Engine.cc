@@ -23,8 +23,8 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 8;
-	mainBoard.size.y = 8;
+	mainBoard.size.x = 12;
+	mainBoard.size.y = 12;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
 	//	Left-side tile from the center
@@ -39,7 +39,7 @@ Engine::Engine()
 
 	createPlayer(kingPos1, middle);
 	//createPlayer(kingPos2, middle);
-	//createPlayer(kingPos3, middle);
+	createPlayer(kingPos3, middle);
 	//createPlayer(kingPos4, middle);
 }
 
@@ -68,8 +68,8 @@ void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
 	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
-	//for(size_t x = 0; x < 8; x++)
-	//	mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
+	for(size_t x = 0; x < 8; x++)
+		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
@@ -102,8 +102,22 @@ void Engine::move(const Vec2s& from, const Vec2s& to)
 
 void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 {
-	//	Cache the king position
-	if(board.at(from).piece == PieceName::King)
+	//	Handle en passant
+	if(board.at(from).piece == PieceName::Pawn)
+	{
+		Vec2i sub = from.as <int> () - to;
+
+		//	En passant was made if the target isn't a piece and movement is slant
+		if(board.at(to).piece == PieceName::None && sub.x != 0 && sub.y != 0)
+		{
+			//	Passing the same coordinate to move will make it empty
+			Vec2s enemyPosition = from + players[currentPlayer].pawnDirection;
+			move(board, enemyPosition, enemyPosition);
+		}
+	}
+
+	//	Update the king position and handle castling
+	else if(board.at(from).piece == PieceName::King)
 	{
 		players[currentPlayer].kingPosition = to;
 		players[currentPlayer].kingMoved = true;
@@ -218,21 +232,27 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 					//	En passante shouldn't be checked by flagThreatenedKings()
 					if(protectKing)
 					{
-						//	What's the distance between the pawn and the pawn spawn row
+						//	Calculate the distance from the pawn spawn row
 						Vec2s spawnDiff = (current - player.pawnSpawnStart) * player.pawnDirection;
 
-						//	Is en passante possible
+						//	En passante could be possible if this pawn is on the 5th rank
 						if(spawnDiff.x == 3 || spawnDiff.y == 3)
 						{
-							SDL_Log("En passante");
-
-							for(auto& side : sides)
+							const Vec2i directions[]
 							{
-								Vec2s nextTo = side - player.pawnDirection;
+								Vec2i(+1, +0),
+								Vec2i(+0, -1),
+								Vec2i(-1, +0),
+								Vec2i(+0, +1),
+							};
 
-								//	If en passane can happen, reveal it
-								if(canEnPassante(board, player, nextTo))
-									show(current, nextTo, MoveType::Capture);
+							for(auto& dir : directions)
+							{
+								Vec2s capturePosition = current;
+
+								//	If the direction isn't the opposite or we can en passante, reveal the capture
+								if(dir != player.pawnDirection * -1 && canEnPassante(board, player, capturePosition, dir))
+									show(current, capturePosition, MoveType::Capture);
 							}
 						}
 					}
@@ -463,7 +483,7 @@ bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queen
 	for(size_t i = 0; i < steps; i++)
 	{
 		//	Move the fake king
-		position += (player.inverseDirection) * multiplier;
+		position += (player.inverseDirection * multiplier);
 
 		//	Forbid castling when some piece blocks or intercepts it
 		if(	(i < steps - 1 && board.occupied(position)) ||
@@ -478,11 +498,41 @@ bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queen
 	return true;
 }
 
-bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position)
+bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i direction)
 {
-	/*	At this point we know that position is the tile next to a pawn
-	 *	that is on it's 5th rank. Let's check if said tile contains
-	 *	an enemy pawn and make sure that it moved 2 steps on it's last turn */
+	//	Is the adjacent position inside the board
+	Vec2s adjacentPosition = position + direction;
+	if(!board.isInside(adjacentPosition))
+		return false;
+
+	Tile& t = board.at(adjacentPosition);
+
+	//	If the adjacent piece isn't a pawn or not an enemy, en passante can't happen
+	if(	t.piece != PieceName::Pawn ||
+		t.playerID == static_cast <size_t> (&player - &players[0]))
+	{
+		return false;
+	}
+
+	//	The position where the enemy should have moved from on their last turn
+	position = adjacentPosition - (players[t.playerID].pawnDirection * 2);
+
+	for(size_t i = moveHistory.size() - 1; i < moveHistory.size(); i--)
+	{
+		if(moveHistory[i].change.playerID == t.playerID)
+		{
+			//	The enemy player did a double step on their last turn
+			if(moveHistory[i].from == position && moveHistory[i].to == adjacentPosition)
+			{
+				position = position + players[t.playerID].pawnDirection;
+				return true;
+			}
+
+			/*	If the double step didn't happen on the last turn of
+			 *	the given player, en passant can't happen */
+			break;
+		}
+	}
 
 	return false;
 }
@@ -499,6 +549,5 @@ bool Engine::Board::occupied(const Vec2s& position)
 
 bool Engine::Board::isInside(const Vec2s& position)
 {
-	return	position >= Vec2s () && 
-			position < size;
+	return	position >= Vec2s () && position < size;
 }

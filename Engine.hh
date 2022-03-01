@@ -90,7 +90,7 @@ private:
 	bool leadsToCheck(Board& board, Vec2s from, Vec2s to);
 
 	bool canCastle(Board& board, Player& player, Vec2s& position, bool queenSide);
-	bool canEnPassante(Board& board, Player& player, Vec2s& position);
+	bool canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i direction);
 
 	void legalMoves(Board& board, Vec2s position, bool protectKing,
 					const std::function <void(Vec2s, MoveType)>& callback);
