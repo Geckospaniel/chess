@@ -23,7 +23,7 @@ const char* name(PieceName name)
 Engine::Engine()
 {
 	mainBoard.size.x = 12;
-	mainBoard.size.y = 8;
+	mainBoard.size.y = 12;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
 	//	Left-side tile from the center
@@ -36,12 +36,10 @@ Engine::Engine()
 
 	Vec2s middle(centerLeft, mainBoard.size.y / 2);
 
-	//sub * abs
-
 	createPlayer(kingPos1, middle);
 	createPlayer(kingPos2, middle);
-	//createPlayer(kingPos3, middle);
-	//createPlayer(kingPos4, middle);
+	createPlayer(kingPos3, middle);
+	createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
@@ -77,10 +75,10 @@ void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
 	player.kingPosition = kingPosition;
 
 	//	Queen
-	//mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
+	mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
 
 	//	Rooks, Bishops and Knights
-	for(int i = 3; i <= 3; i++)
+	for(int i = 1; i <= 3; i++)
 	{
 		//	Because of the way the enum is ordered, we can initialize these pieces in a loop
 		PieceName piece = static_cast <PieceName> (static_cast <int> (PieceName::Pawn) + i);
@@ -99,6 +97,10 @@ Engine::Tile Engine::at(size_t x, size_t y)
 void Engine::move(const Vec2s& from, const Vec2s& to)
 {
 	move(mainBoard, from, to);
+
+	//	Update the current player to the next
+	if(++currentPlayer >= players.size())
+		currentPlayer = 0;
 }
 
 void Engine::move(Board& board, const Vec2s& from, Vec2s to)
@@ -170,10 +172,6 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 
 	//	Add this move to the history
 	moveHistory.emplace_back(from, to, board.at(to));
-
-	//	Update the turn
-	if(++currentPlayer >= players.size())
-		currentPlayer = 0;
 }
 
 void Engine::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback)
