@@ -40,12 +40,12 @@ public:
 
 	Tile at(size_t x, size_t y);
 	size_t getCurrentTurn() { return currentPlayer; }
-	Vector2 <size_t> getBoardSize() { return mainBoard.size; }
+	Vec2s getBoardSize() { return mainBoard.size; }
 
-	void move(const Vector2 <size_t>& from, const Vector2 <size_t>& to);
+	void move(const Vec2s& from, const Vec2s& to);
 
-	void legalMoves(Vector2 <size_t> position,
-					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
+	void legalMoves(Vec2s position,
+					const std::function <void(Vec2s, MoveType)>& callback);
 
 private:
 	struct Player
@@ -54,37 +54,36 @@ private:
 		bool kingThreatened = false;
 		bool rookMoved[2] { false, false };
 
-		Vector2 <size_t> kingPosition;
-		Vector2 <int> inverseDirection;
-		Vector2 <int> pawnDirection;
+		Vec2s kingPosition;
+		Vec2i inverseDirection;
+		Vec2i pawnDirection;
 
-		Vector2 <size_t> pawnSpawnStart;
-		Vector2 <size_t> pawnSpawnEnd;
+		Vec2s pawnSpawnStart;
+		Vec2s pawnSpawnEnd;
 	};
 
 	struct Board
 	{
-		bool occupied(const Vector2 <size_t>& position);
-		bool isInside(const Vector2 <size_t>& position);
+		bool occupied(const Vec2s& position);
+		bool isInside(const Vec2s& position);
 
-		Tile& at(const Vector2 <size_t>& position);
+		Tile& at(const Vec2s& position);
 		std::vector <std::vector <Tile>> data;
 
-		Vector2 <size_t> size;
+		Vec2s size;
 	};
 
-	void createPlayer(Vector2 <size_t> kingPosition, Vector2 <size_t> middle);
+	void createPlayer(Vec2s kingPosition, Vec2s middle);
 	void flagThreatenedKings(Board& board);
-	bool leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> to);
-	bool canCastle(Board& board, Player& player, Vector2 <size_t>& position, bool queenSide);
+	bool leadsToCheck(Board& board, Vec2s from, Vec2s to);
+	bool canCastle(Board& board, Player& player, Vec2s& position, bool queenSide);
 
-	void legalMoves(Board& board, Vector2 <size_t> position, bool protectKing,
-					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
+	void legalMoves(Board& board, Vec2s position, bool protectKing,
+					const std::function <void(Vec2s, MoveType)>& callback);
 
-	void move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> to);
+	void move(Board& board, const Vec2s& from, Vec2s to);
 
 	std::vector <Player> players;
-	std::vector <Board> boardBuffer;
 
 	size_t currentPlayer = 0;
 	Board mainBoard;

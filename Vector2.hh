@@ -1,6 +1,8 @@
 #ifndef VECTOR2_HEADER
 #define VECTOR2_HEADER
 
+#include <cstddef>
+
 template <typename T>
 struct Vector2
 {
@@ -34,5 +36,7 @@ struct Vector2
 };
 
 typedef Vector2 <float> Vec2;
+typedef Vector2 <size_t> Vec2s;
+typedef Vector2 <int> Vec2i;
 
 #endif
