@@ -23,8 +23,8 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 12;
-	mainBoard.size.y = 12;
+	mainBoard.size.x = 8;
+	mainBoard.size.y = 8;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
 	//	Left-side tile from the center
@@ -38,8 +38,8 @@ Engine::Engine()
 	Vec2s middle(centerLeft, mainBoard.size.y / 2);
 
 	createPlayer(kingPos1, middle);
-	//createPlayer(kingPos2, middle);
-	createPlayer(kingPos3, middle);
+	createPlayer(kingPos2, middle);
+	//createPlayer(kingPos3, middle);
 	//createPlayer(kingPos4, middle);
 }
 
@@ -102,6 +102,9 @@ void Engine::move(const Vec2s& from, const Vec2s& to)
 
 void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 {
+	/*	TODO maybe move() could take a move type as a parameter
+	 *	so that we won't have do checks with positions */
+
 	//	Handle en passant
 	if(board.at(from).piece == PieceName::Pawn)
 	{
@@ -130,13 +133,19 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 			//	Get a direction vector pointing towards the rook
 			Vec2i shift = players[currentPlayer].inverseDirection * (kingSide ? -1 : +1);
 
-			//	Where is the rook
-			Vec2s rookPosition = from + shift * (3 + !kingSide);
+			//	Make sure that the user actually selected a castling position
+			if(board.at(to + shift * (1 + !kingSide)).piece == PieceName::Rook)
+			{
+				//	Where is the rook
+				Vec2s rookPosition = from + shift * (3 + !kingSide);
 
-			//	Move the king and the rook
-			to = from + shift * 2;
-			move(board, rookPosition, to - shift);
+				//	Move the king and the rook
+				to = from + shift * 2;
+				move(board, rookPosition, to - shift);
+			}
 		}
+
+		players[currentPlayer].kingCanCastle = false;
 	}
 
 	//	Check if rooks have moved
