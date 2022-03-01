@@ -84,7 +84,7 @@ void Chess::onRender()
 void Chess::cacheMoves()
 {
 	cachedMoves.clear();
-	e.showMoves(selected, [this](Vector2 <size_t> pos, MoveType type)
+	e.legalMoves(selected, [this](Vector2 <size_t> pos, MoveType type)
 	{
 		cachedMoves.push_back(std::make_pair(pos, type));
 	});

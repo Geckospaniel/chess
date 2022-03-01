@@ -44,7 +44,7 @@ public:
 
 	void move(const Vector2 <size_t>& from, const Vector2 <size_t>& to);
 
-	void showMoves(Vector2 <size_t> position,
+	void legalMoves(Vector2 <size_t> position,
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
 private:
@@ -78,7 +78,7 @@ private:
 	bool leadsToCheck(Board& board, Vector2 <size_t> from, Vector2 <size_t> to);
 	bool canCastle(Board& board, Player& player, Vector2 <size_t>& position, bool queenSide);
 
-	void showMoves(Board& board, Vector2 <size_t> position, bool protectKing,
+	void legalMoves(Board& board, Vector2 <size_t> position, bool protectKing,
 					const std::function <void(Vector2 <size_t>, MoveType)>& callback);
 
 	void move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> to);

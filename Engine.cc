@@ -148,7 +148,7 @@ void Engine::move(Board& board, const Vector2 <size_t>& from, Vector2 <size_t> t
 		currentPlayer = 0;
 }
 
-void Engine::showMoves(Vector2 <size_t> position,
+void Engine::legalMoves(Vector2 <size_t> position,
 						const std::function <void(Vector2 <size_t>, MoveType)>& callback)
 {
 	//	Reveal checked kings
@@ -158,10 +158,10 @@ void Engine::showMoves(Vector2 <size_t> position,
 			callback(players[i].kingPosition, MoveType::Check);
 	}
 
-	showMoves(mainBoard, position, true, callback);
+	legalMoves(mainBoard, position, true, callback);
 }
 
-void Engine::showMoves(Board& board, Vector2 <size_t> position, bool protectKing,
+void Engine::legalMoves(Board& board, Vector2 <size_t> position, bool protectKing,
 						const std::function <void(Vector2 <size_t>, MoveType)>& callback)
 {
 	auto show = [this, &board, &callback, protectKing]
@@ -395,7 +395,7 @@ void Engine::flagThreatenedKings(Board& board)
 				continue;
 
 			//	Get every move that the piece in this tile can make
-			showMoves(board, Vector2 <size_t> (x, y), false,
+			legalMoves(board, Vector2 <size_t> (x, y), false,
 			[this, &board, playerID](Vector2 <size_t> pos, MoveType type)
 			{
 				Tile t = board.data[pos.x][pos.y];

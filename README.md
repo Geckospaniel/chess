@@ -6,7 +6,7 @@ Easy to Integrate chess game
 
 Usage is as simple as
 - Creating an instance of the Engine class
-- Using Engine::showMoves() to see valid moves of the given piece
+- Using Engine::legalMoves() to see valid moves of the given piece
 - Calling Engine::move() to move the given piece
 
 The Engine class doesn't handle user interaction. For an example on how to do that
