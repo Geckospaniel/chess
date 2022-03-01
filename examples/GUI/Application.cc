@@ -51,6 +51,10 @@ bool Application::start()
 							DBG(SDL_Log("Closing window %lu", activeWindow));
 							windows[activeWindow].close();
 
+							//	FIXME multiple windows are supported but for some reason it's never actually removed
+							//	FIXME set running to false only if all windows are closed
+
+							running = false;
 							break;
 						}
 
