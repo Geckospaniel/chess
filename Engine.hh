@@ -61,6 +61,9 @@ private:
 
 		Vec2s pawnSpawnStart;
 		Vec2s pawnSpawnEnd;
+	
+		//	FIXME technically you could have multiple possible en passantes
+		Vec2s enPassanteCapture;
 	};
 
 	struct Board

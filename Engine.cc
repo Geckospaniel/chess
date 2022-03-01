@@ -1,5 +1,4 @@
 #include "Engine.hh"
-#include <SDL2/SDL_log.h>
 
 #include <cmath>
 
@@ -23,7 +22,7 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 8;
+	mainBoard.size.x = 12;
 	mainBoard.size.y = 8;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
@@ -36,6 +35,8 @@ Engine::Engine()
 	Vec2s kingPos4(mainBoard.size.x - 1, mainBoard.size.y / 2 - 1);
 
 	Vec2s middle(centerLeft, mainBoard.size.y / 2);
+
+	//sub * abs
 
 	createPlayer(kingPos1, middle);
 	createPlayer(kingPos2, middle);
@@ -113,9 +114,8 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 		//	En passant was made if the target isn't a piece and movement is slant
 		if(board.at(to).piece == PieceName::None && sub.x != 0 && sub.y != 0)
 		{
-			//	Passing the same coordinate to move will make it empty
-			Vec2s enemyPosition = from + players[currentPlayer].pawnDirection;
-			move(board, enemyPosition, enemyPosition);
+			//	Passing 2 of the same coordinate to move will make the tile empty
+			move(board, players[currentPlayer].enPassanteCapture, players[currentPlayer].enPassanteCapture);
 		}
 	}
 
@@ -196,10 +196,7 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 	{
 		//	If there's a check that should not happen, don't reveal it
 		if(protectKing && leadsToCheck(board, from, to))
-		{
-			SDL_Log("Moving '%s' from (%lu, %lu) to (%lu, %lu) causes a check", name(board.at(from).piece), from.x, from.y, to.x, to.y);
 			return;
-		}
 
 		callback(to, m);
 	};
@@ -249,18 +246,17 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 						{
 							const Vec2i directions[]
 							{
-								Vec2i(+1, +0),
-								Vec2i(+0, -1),
-								Vec2i(-1, +0),
-								Vec2i(+0, +1),
+								player.pawnDirection,
+								player.inverseDirection,
+								player.inverseDirection * -1
 							};
 
 							for(auto& dir : directions)
 							{
 								Vec2s capturePosition = current;
 
-								//	If the direction isn't the opposite or we can en passante, reveal the capture
-								if(dir != player.pawnDirection * -1 && canEnPassante(board, player, capturePosition, dir))
+								//	If en passante is possible, reveal the capture
+								if(canEnPassante(board, player, capturePosition, dir))
 									show(current, capturePosition, MoveType::Capture);
 							}
 						}
@@ -534,6 +530,7 @@ bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i 
 			if(moveHistory[i].from == position && moveHistory[i].to == adjacentPosition)
 			{
 				position = position + players[t.playerID].pawnDirection;
+				player.enPassanteCapture = adjacentPosition;
 				return true;
 			}
 
