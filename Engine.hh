@@ -51,6 +51,7 @@ private:
 	struct Player
 	{
 		bool kingMoved = false;
+		bool kingCanCastle = false;
 		bool kingThreatened = false;
 		bool rookMoved[2] { false, false };
 
@@ -68,7 +69,7 @@ private:
 		bool isInside(const Vec2s& position);
 
 		Tile& at(const Vec2s& position);
-		std::vector <std::vector <Tile>> data;
+		std::vector <Tile> data;
 
 		Vec2s size;
 	};
@@ -87,7 +88,9 @@ private:
 	void createPlayer(Vec2s kingPosition, Vec2s middle);
 	void flagThreatenedKings(Board& board);
 	bool leadsToCheck(Board& board, Vec2s from, Vec2s to);
+
 	bool canCastle(Board& board, Player& player, Vec2s& position, bool queenSide);
+	bool canEnPassante(Board& board, Player& player, Vec2s& position);
 
 	void legalMoves(Board& board, Vec2s position, bool protectKing,
 					const std::function <void(Vec2s, MoveType)>& callback);

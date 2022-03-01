@@ -23,9 +23,9 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 12;
-	mainBoard.size.y = 12;
-	mainBoard.data.resize(mainBoard.size.x, std::vector <Tile> (mainBoard.size.y, { PieceName::None, 0 }));
+	mainBoard.size.x = 8;
+	mainBoard.size.y = 8;
+	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
 	//	Left-side tile from the center
 	size_t centerLeft = mainBoard.size.x / 2 - 1;
@@ -38,9 +38,9 @@ Engine::Engine()
 	Vec2s middle(centerLeft, mainBoard.size.y / 2);
 
 	createPlayer(kingPos1, middle);
-	createPlayer(kingPos2, middle);
-	createPlayer(kingPos3, middle);
-	createPlayer(kingPos4, middle);
+	//createPlayer(kingPos2, middle);
+	//createPlayer(kingPos3, middle);
+	//createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
@@ -68,18 +68,18 @@ void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
 	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
-	for(size_t x = 0; x < 8; x++)
-		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
+	//for(size_t x = 0; x < 8; x++)
+	//	mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
 	player.kingPosition = kingPosition;
 
 	//	Queen
-	mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
+	//mainBoard.at(kingPosition + player.inverseDirection) = Tile(PieceName::Queen, id);
 
 	//	Rooks, Bishops and Knights
-	for(int i = 1; i <= 3; i++)
+	for(int i = 3; i <= 3; i++)
 	{
 		//	Because of the way the enum is ordered, we can initialize these pieces in a loop
 		PieceName piece = static_cast <PieceName> (static_cast <int> (PieceName::Pawn) + i);
@@ -92,7 +92,7 @@ void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
 Engine::Tile Engine::at(size_t x, size_t y)
 {
 	//	TODO validate position
-	return mainBoard.data[x][y];
+	return mainBoard.at(Vec2s(x, y));
 }
 
 void Engine::move(const Vec2s& from, const Vec2s& to)
@@ -109,17 +109,19 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 		players[currentPlayer].kingMoved = true;
 
 		//	Handle the king castling
-		if(board.at(to).piece == PieceName::Rook)
+		if(players[currentPlayer].kingCanCastle)
 		{
-			/*	Are the king and the rook moving upwards, downwards, left or right?
-			 *	We can get the shift by multiplying the inversed direction with
-			 *	a positive or a negative value depending on whether the rook is
-			 *	kingside or queenside */
-			Vec2i shift = players[currentPlayer].inverseDirection * (to <= from ? +1 : -1);
+			bool kingSide = to <= from;
 
-			//	Move the rook and shift the king position backwards
-			move(board, to, to + shift * 2);
-			to += shift;
+			//	Get a direction vector pointing towards the rook
+			Vec2i shift = players[currentPlayer].inverseDirection * (kingSide ? -1 : +1);
+
+			//	Where is the rook
+			Vec2s rookPosition = from + shift * (3 + !kingSide);
+
+			//	Move the king and the rook
+			to = from + shift * 2;
+			move(board, rookPosition, to - shift);
 		}
 	}
 
@@ -179,7 +181,7 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 		callback(to, m);
 	};
 
-	Tile t = board.data[position.x][position.y];
+	Tile t = board.at(position);
 
 	//	Some large number that's way larger than the board
 	size_t steps = 1000;
@@ -189,7 +191,7 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 	bool straight = false;
 
 	//	TODO validate position
-	switch(board.data[position.x][position.y].piece)
+	switch(t.piece)
 	{
 		case PieceName::Pawn:
 		{
@@ -205,13 +207,37 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 				//	Captures can be done on the origin tile
 				if(i == 0)
 				{
+					Player& player = players[t.playerID];
+
 					Vec2s sides[2]
 					{
 						current + direction + players[t.playerID].inverseDirection,
 						current + direction - players[t.playerID].inverseDirection
 					};
 
-					//	If a capture can be made, reveal it
+					//	En passante shouldn't be checked by flagThreatenedKings()
+					if(protectKing)
+					{
+						//	What's the distance between the pawn and the pawn spawn row
+						Vec2s spawnDiff = (current - player.pawnSpawnStart) * player.pawnDirection;
+
+						//	Is en passante possible
+						if(spawnDiff.x == 3 || spawnDiff.y == 3)
+						{
+							SDL_Log("En passante");
+
+							for(auto& side : sides)
+							{
+								Vec2s nextTo = side - player.pawnDirection;
+
+								//	If en passane can happen, reveal it
+								if(canEnPassante(board, player, nextTo))
+									show(current, nextTo, MoveType::Capture);
+							}
+						}
+					}
+
+					//	If a normal capture can be made, reveal it
 					for(auto& side : sides)
 					{
 						if(board.isInside(side) && board.occupied(side) && t.playerID != board.at(side).playerID)
@@ -369,8 +395,8 @@ bool Engine::leadsToCheck(Board& board, Vec2s from, Vec2s to)
 	bool result = players[currentPlayer].kingThreatened;
 
 	//	Reset the old state
-	board.data[from.x][from.y] = oldFromTile;
-	board.data[to.x][to.y] = oldToTile;
+	board.at(from) = oldFromTile;
+	board.at(to) = oldToTile;
 
 	//	Reset the old player states
 	players = oldPlayerStates;
@@ -390,20 +416,20 @@ void Engine::flagThreatenedKings(Board& board)
 	{
 		for(size_t y = 0; y < board.size.y; y++)
 		{
-			size_t playerID = board.data[x][y].playerID;
+			Tile& originTile = board.at(Vec2s(x, y));
 
 			//	Ignore tiles without a piece
-			if(board.data[x][y].piece == PieceName::None)
+			if(originTile.piece == PieceName::None)
 				continue;
 
 			//	Get every move that the piece in this tile can make
 			legalMoves(board, Vec2s(x, y), false,
-			[this, &board, playerID](Vec2s pos, MoveType type)
+			[this, &board, &originTile](Vec2s pos, MoveType type)
 			{
-				Tile t = board.data[pos.x][pos.y];
+				Tile t = board.at(pos);
 
 				//	If the colors match or there's no capture, the move is irrelevant
-				if(t.playerID == playerID || type != MoveType::Capture)
+				if(t.playerID == originTile.playerID || type != MoveType::Capture)
 					return;
 
 				//	Is the target piece a king
@@ -418,44 +444,57 @@ bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queen
 {
 	//	If the rook on the given side has moved, no castling can happen
 	if(player.rookMoved[queenSide])
+	{
+		player.kingCanCastle = false;
 		return false;
+	}
 
 	//	How many steps until the king reaches the rook
-	size_t steps = 3 + queenSide;
+	size_t steps = 2;
 
 	//	Is the king going left or right
 	int multiplier = queenSide ? +1 : -1;
 	Vec2s originalPosition = position;
 
-	/*	We need to check if any enemy piece intercepts the path
-	 *	from the king to the rook. Let's implement a spaghetti
-	 *	solution and simulate the king going towards the rook. If
-	 *	any checks happen, the king cannot castle */
+	/*	We need to check if any enemy piece intercepts the castling
+	 *	path. Let's implement a spaghetti solution and simulate
+	 *	the king going towards the rook. If any checks
+	 *	happen, the king cannot castle */
 	for(size_t i = 0; i < steps; i++)
 	{
-		//	Move the king
+		//	Move the fake king
 		position += (player.inverseDirection) * multiplier;
 
-		//	Forbid castling when some piece blocks it
-		if(i < steps - 1 && board.occupied(position))
+		//	Forbid castling when some piece blocks or intercepts it
+		if(	(i < steps - 1 && board.occupied(position)) ||
+			(leadsToCheck(board, originalPosition, position)))
+		{
+			player.kingCanCastle = false;
 			return false;
-
-		//	Forbid  castling when some piece intercepts it
-		if(leadsToCheck(board, originalPosition, position))
-			return false;
+		}
 	}
 
+	player.kingCanCastle = true;
 	return true;
+}
+
+bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position)
+{
+	/*	At this point we know that position is the tile next to a pawn
+	 *	that is on it's 5th rank. Let's check if said tile contains
+	 *	an enemy pawn and make sure that it moved 2 steps on it's last turn */
+
+	return false;
 }
 
 Engine::Tile& Engine::Board::at(const Vec2s& position)
 {
-	return data[position.x][position.y];
+	return data[size.x * position.y + position.x];
 }
 
 bool Engine::Board::occupied(const Vec2s& position)
 {
-	return data[position.x][position.y].piece != PieceName::None;
+	return at(position).piece != PieceName::None;
 }
 
 bool Engine::Board::isInside(const Vec2s& position)
