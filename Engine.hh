@@ -55,6 +55,8 @@ private:
 		bool kingThreatened = false;
 		bool rookMoved[2] { false, false };
 
+		size_t possibleMoves;
+
 		Vec2s kingPosition;
 		Vec2i inverseDirection;
 		Vec2i pawnDirection;
@@ -89,7 +91,7 @@ private:
 	};
 
 	void createPlayer(Vec2s kingPosition, Vec2s middle);
-	void flagThreatenedKings(Board& board);
+	void flagThreatenedKings(Board& board, bool countLegalMoves);
 	bool leadsToCheck(Board& board, Vec2s from, Vec2s to);
 
 	bool canCastle(Board& board, Player& player, Vec2s& position, bool queenSide);

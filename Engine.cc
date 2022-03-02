@@ -22,8 +22,8 @@ const char* name(PieceName name)
 
 Engine::Engine()
 {
-	mainBoard.size.x = 12;
-	mainBoard.size.y = 12;
+	mainBoard.size.x = 8;
+	mainBoard.size.y = 8;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
 
 	//	Left-side tile from the center
@@ -36,10 +36,10 @@ Engine::Engine()
 
 	Vec2s middle(centerLeft, mainBoard.size.y / 2);
 
-	createPlayer(kingPos1, middle);
 	createPlayer(kingPos2, middle);
-	createPlayer(kingPos3, middle);
-	createPlayer(kingPos4, middle);
+	createPlayer(kingPos1, middle);
+	//createPlayer(kingPos3, middle);
+	//createPlayer(kingPos4, middle);
 }
 
 void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
@@ -168,7 +168,7 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 	board.at(from).piece = PieceName::None;
 
 	//	Since basically any move can trigger a check, check for those checks
-	flagThreatenedKings(board);	
+	flagThreatenedKings(board, true);	
 
 	//	Add this move to the history
 	moveHistory.emplace_back(from, to, board.at(to));
@@ -192,7 +192,7 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 	auto show = [this, &board, &callback, protectKing]
 	(Vec2s from, Vec2s to, MoveType m)
 	{
-		//	If there's a check that should not happen, don't reveal it
+		//	If this move leads to a check, don't reveal it
 		if(protectKing && leadsToCheck(board, from, to))
 			return;
 
@@ -414,7 +414,7 @@ bool Engine::leadsToCheck(Board& board, Vec2s from, Vec2s to)
 	board.at(from).piece = PieceName::None;
 
 	//	Check if any kings are threatened
-	flagThreatenedKings(board);
+	flagThreatenedKings(board, false);
 	bool result = players[currentPlayer].kingThreatened;
 
 	//	Reset the old state
@@ -428,11 +428,18 @@ bool Engine::leadsToCheck(Board& board, Vec2s from, Vec2s to)
 	return result;
 }
 
-void Engine::flagThreatenedKings(Board& board)
+void Engine::flagThreatenedKings(Board& board, bool countLegalMoves)
 {
 	//	Reset the check states
 	for(auto& player : players)
+	{
 		player.kingThreatened = false;
+
+		if(countLegalMoves)
+			player.possibleMoves = 0;
+	}
+
+	size_t oldPlayerTurn = currentPlayer;
 
 	//	Ugly brute force to check if some piece can capture a king
 	for(size_t x = 0; x < board.size.x; x++)
@@ -447,9 +454,23 @@ void Engine::flagThreatenedKings(Board& board)
 
 			//	Get every move that the piece in this tile can make
 			legalMoves(board, Vec2s(x, y), false,
-			[this, &board, &originTile](Vec2s pos, MoveType type)
+			[this, &board, &originTile, x, y, countLegalMoves](Vec2s pos, MoveType type)
 			{
 				Tile t = board.at(pos);
+				currentPlayer = originTile.playerID;
+
+				/*	FIXME FIXME FIXME FIXME
+				 *	I don't like this approach at all. Basically we want to check
+				 *	how many legal moves the player at origin tile can do to detect
+				 *	checkmates. I have no idea how this could be done efficiently so
+				 *	checking looks something like
+				 *
+				 *	move() -> flagThreatenedKings() -> legalMoves() -> leadsToCheck() ->
+				 *	flagThreatenedKings() -> legalMoves()
+				 *
+				 *	A solution could be to figure out a less bruteforce-ish way */
+				if(countLegalMoves && !leadsToCheck(board, Vec2s(x, y), pos))
+					players[originTile.playerID].possibleMoves++;
 
 				//	If the colors match or there's no capture, the move is irrelevant
 				if(t.playerID == originTile.playerID || type != MoveType::Capture)
@@ -461,6 +482,8 @@ void Engine::flagThreatenedKings(Board& board)
 			});
 		}
 	}
+
+	currentPlayer = oldPlayerTurn;
 }
 
 bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queenSide)
