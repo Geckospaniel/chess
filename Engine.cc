@@ -192,9 +192,12 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 	auto show = [this, &board, &callback, protectKing]
 	(Vec2s from, Vec2s to, MoveType m)
 	{
-		//	If this move leads to a check, don't reveal it
-		if(protectKing && leadsToCheck(board, from, to))
+		//	If this move leads to checking the current player, don't reveal it
+		if(	protectKing && board.at(from).playerID == currentPlayer &&
+			leadsToCheck(board, from, to))
+		{
 			return;
+		}
 
 		callback(to, m);
 	};
