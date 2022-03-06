@@ -14,6 +14,9 @@ struct Vector2
 
 	bool operator!=(const Vector2 <T>& rhs) const { return x != rhs.x || y != rhs.y; }
 	bool operator==(const Vector2 <T>& rhs) const { return x == rhs.x && y == rhs.y; }
+
+	/*	FIXME
+	 *	The logical AND operator doesn't seem correct here */
 	bool operator<=(const Vector2 <T>& rhs) const { return x <= rhs.x && y <= rhs.y; }
 	bool operator>=(const Vector2 <T>& rhs) const { return x >= rhs.x && y >= rhs.y; }
 	bool operator<(const Vector2 <T>& rhs) const { return x < rhs.x && y < rhs.y; }
