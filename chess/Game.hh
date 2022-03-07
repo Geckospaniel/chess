@@ -40,7 +40,8 @@ struct Tile
 class Game
 {
 public:
-	Game();
+	Game(size_t boardWidth, size_t boardHeight);
+	const Player& addPlayer(const Vec2s& kingPosition, const Vec2s& middle, bool isBot);
 
 	Tile at(size_t x, size_t y);
 	size_t getCurrentTurn() { return currentPlayer; }

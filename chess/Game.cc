@@ -20,26 +20,17 @@ const char* name(Chess::PieceName name)
 	return n;
 }
 
-Chess::Game::Game()
+Chess::Game::Game(size_t boardWidth, size_t boardHeight)
 {
-	mainBoard.size.x = 8;
-	mainBoard.size.y = 8;
+	mainBoard.size.x = boardWidth;
+	mainBoard.size.y = boardHeight;
 	mainBoard.data.resize(mainBoard.size.x * mainBoard.size.y, {PieceName::None, 0});
+}
 
-	//	Left-side tile from the center
-	size_t centerLeft = mainBoard.size.x / 2 - 1;
-
-	Vec2s kingPos1(centerLeft, 0);
-	Vec2s kingPos2(centerLeft, mainBoard.size.y - 1);
-	Vec2s kingPos3(0, mainBoard.size.y / 2 - 1);
-	Vec2s kingPos4(mainBoard.size.x - 1, mainBoard.size.y / 2 - 1);
-
-	Vec2s middle(centerLeft, mainBoard.size.y / 2);
-
-	createPlayer(kingPos2, middle);
-	createPlayer(kingPos1, middle);
-	//createPlayer(kingPos3, middle);
-	//createPlayer(kingPos4, middle);
+const Chess::Player& Chess::Game::addPlayer(const Vec2s& kingPosition, const Vec2s& middle, bool isBot)
+{
+	createPlayer(kingPosition, middle);
+	return players.back();
 }
 
 void Chess::Game::createPlayer(Vec2s kingPosition, Vec2s middle)
