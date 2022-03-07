@@ -5,12 +5,12 @@ OBJECT_DEBUG	=	$(addprefix obj/debug/,$(addsuffix .o,$(SOURCE)))
 OBJECT_RELEASE	=	$(addprefix obj/release/,$(addsuffix .o,$(SOURCE)))
 
 debug:	obj/ $(OBJECT_DEBUG)
-	make -C ../.. debug
-	@g++ -o x $(OBJECT_DEBUG) -lSDL2 ../../obj/debug/*.cc.o
+	make -C ../../chess debug
+	@g++ -o x $(OBJECT_DEBUG) ../../chess/obj/debug/*.cc.o -lSDL2
 
 release:	obj/ $(OBJECT_RELEASE)
-	make -C ../.. release
-	@g++ -o x $(OBJECT_RELEASE) -lSDL2 ../../obj/release/*.cc.o
+	make -C ../../chess release
+	@g++ -o x $(OBJECT_RELEASE) ../../chess/obj/release/*.cc.o -lSDL2
 
 obj/debug/%.cc.o:	%.cc $(HEADER)
 	@echo "Building $< in debug mode"
