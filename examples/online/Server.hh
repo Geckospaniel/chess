@@ -18,10 +18,11 @@ public:
 	Server();
 
 private:
+	std::ostringstream getTileData();
+
 	Chess::Game game;
 	websocket server;
 
-	std::ostringstream getTileData();
     std::map <websocketpp::connection_hdl, Player, std::owner_less <websocketpp::connection_hdl>> players;
 };
 

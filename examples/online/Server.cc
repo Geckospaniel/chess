@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-Server::Server()
+Server::Server() : game(8, 8)
 {
 	server.set_access_channels(websocketpp::log::alevel::all);
 	server.clear_access_channels(websocketpp::log::alevel::frame_payload);
@@ -14,7 +14,7 @@ Server::Server()
 		std::ostringstream addr;
 		addr << client->get_raw_socket().remote_endpoint();
 
-		std::cout << "addr is " << addr.str() << '\n';
+		//	TODO add a rate limiter
 
 		try
 		{
@@ -36,8 +36,15 @@ Server::Server()
 				received >> legalFrom.y;
 
 				auto player = players.find(conn);
+
+				//	Cache legal moves and store them to a stringstream
 				std::ostringstream ss = player->second.getLegalMoves(legalFrom);
 				client->send(ss.str(), msg->get_opcode());
+
+				//ss = std::ostringstream(std::string());
+				//ss << "check";
+				//game.getChecks([&ss](Vec2s pos) { ss << ' ' << pos.x << ' ' << pos.y; });
+				//client->send(ss.str(), msg->get_opcode());
 			}
 
 			else if(cmd == "move")
@@ -46,30 +53,86 @@ Server::Server()
 				received >> moveTo.x;
 				received >> moveTo.y;
 
-				auto player = players.find(conn);
-				if(player->second.move(moveTo))
+				//	Can a move happen?
+				if(players.find(conn)->second.move(moveTo))
 				{
+					//	Inform the player that the given move happened
 					server.send(conn, "move", msg->get_opcode());
-					std::ostringstream tileData = getTileData();
 
+					std::ostringstream tileData = getTileData();
+					std::ostringstream checks;
+
+					checks << "check";
+					game.getChecks([&checks](Vec2s pos) { checks << ' ' << pos.x << ' ' << pos.y; });
+
+					//	Send each player new tile and check data
 					for(auto& player : players)
+					{
 						server.send(player.first, tileData.str(), msg->get_opcode());
+						server.send(player.first, checks.str(), msg->get_opcode());
+					}
 				}
 			}
 
-			else if(cmd == "tile")
-			{
-				std::ostringstream tileData = getTileData();
-				server.send(conn, tileData.str(), msg->get_opcode());
-			}
-
+			//	TODO forbid multiple "new" messages
 			else if(cmd == "new")
 			{
-				players.emplace(conn, Player(game, players.size()));
+				std::ostringstream str;
+				Vec2s boardSize = game.getBoardSize();
 
-				std::stringstream str;
-				str << "size " << game.getBoardSize().x << ' ' << game.getBoardSize().y;
+				//	Tell whoever connected how large the board is
+				str << "size " << boardSize.x << ' ' << boardSize.y;
 				server.send(conn, str.str(), msg->get_opcode());
+
+				//	Tell the player their ID
+				str = std::ostringstream(std::string());
+				str << "id ";
+				str << players.size();
+				server.send(conn, str.str(), msg->get_opcode());
+
+				//	TODO have a player limit as a variable
+				if(players.size() < 2)
+				{
+					//	Find the middle point of the board
+					size_t centerLeft = boardSize.x / 2 - 1;
+					Vec2s middle(centerLeft, boardSize.y / 2);
+
+					//	King positions for the players
+					Vec2s positions[]
+					{
+						Vec2s(centerLeft, 0),
+						Vec2s(centerLeft, boardSize.y - 1)
+					};
+				
+					//	Add a new player
+					const Chess::Player& p = game.addPlayer(positions[players.size()], middle, false);
+					players.emplace(conn, Player(game, &p, players.size()));
+
+					//	Tell the player who they should look at the board
+					str = players.find(conn)->second.getView();
+					server.send(conn, str.str(), msg->get_opcode());
+
+					//	Inform each player about the new pieces on the board
+					str = getTileData();
+					for(auto& player : players)
+						server.send(player.first, str.str(), msg->get_opcode());
+
+					//	TODO Wait for all players to connect before starting the game
+				}
+
+				else
+				{
+					//	Send data about the tiles to new spectators
+					players.emplace(conn, Player(game, nullptr, players.size()));
+					str = getTileData();
+					server.send(conn, str.str(), msg->get_opcode());
+
+					//	Send check information to new spectators
+					std::ostringstream checks;
+					checks << "check";
+					game.getChecks([&checks](Vec2s pos) { checks << ' ' << pos.x << ' ' << pos.y; });
+					server.send(conn, checks.str(), msg->get_opcode());
+				}
 			}
 
 			else server.send(conn, "invalid", msg->get_opcode());

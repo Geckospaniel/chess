@@ -11,17 +11,19 @@
 class Player
 {
 public:
-	Player(Chess::Game& game, size_t playerID)
-		: game(game), playerID(playerID)
+	Player(Chess::Game& game, const Chess::Player* player, size_t playerID)
+		: game(game), player(player), playerID(playerID)
 	{
 		std::cout << "Added player " << playerID << '\n';
 	}
 
 	bool move(Vec2s to);
 	std::ostringstream getLegalMoves(Vec2s from);
+	std::ostringstream getView();
 
 private:
 	Chess::Game& game;
+	const Chess::Player* player;
 	size_t playerID;
 
 	std::vector <std::pair <Vec2s, Chess::MoveType>> moves;
