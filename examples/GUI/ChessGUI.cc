@@ -1,10 +1,22 @@
 #include "ChessGUI.hh"
 #include "BitImage.hh"
 
-ChessGUI::ChessGUI()
+ChessGUI::ChessGUI() : e(8, 8)
 {
 	addWindow(2, 2);
 	capFPS(30);
+
+	Vec2s boardSize = e.getBoardSize();
+	size_t centerLeft = boardSize.x / 2 - 1;
+
+	Vec2s kingPos1(centerLeft, 0);
+	Vec2s kingPos2(centerLeft, boardSize.y - 1);
+	//Vec2s kingPos3(0, boardSize.y / 2 - 1);
+	//Vec2s kingPos4(boardSize.x - 1, boardSize.y / 2 - 1);
+
+	Vec2s middle(centerLeft, boardSize.y / 2);
+	e.addPlayer(kingPos1, middle, false);
+	e.addPlayer(kingPos2, middle, false);
 }
 
 ChessGUI::~ChessGUI() {}
