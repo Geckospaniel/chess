@@ -2,17 +2,17 @@
 
 bool Player::move(Vec2s to)
 {
-	if(e.at(movesFrom.x, movesFrom.y).playerID != playerID)
+	if(game.at(movesFrom.x, movesFrom.y).playerID != playerID)
 		return false;
 
-	if(e.getCurrentTurn() != playerID)
+	if(game.getCurrentTurn() != playerID)
 		return false;
 
 	for(auto& move : moves)
 	{
 		if(to == move.first)
 		{
-			e.move(movesFrom, to);
+			game.move(movesFrom, to);
 			return true;
 		}
 	}
@@ -22,7 +22,7 @@ bool Player::move(Vec2s to)
 
 std::ostringstream Player::getLegalMoves(Vec2s from)
 {
-	Vec2s boardSize = e.getBoardSize();
+	Vec2s boardSize = game.getBoardSize();
 	moves.clear();
 
 	std::cout << "Legal from " << from.x << ' ' << from.y << '\n';
@@ -34,7 +34,7 @@ std::ostringstream Player::getLegalMoves(Vec2s from)
 		return str;
 
 	movesFrom = from;
-	e.legalMoves(from, [this, &str](Vec2s pos, MoveType t)
+	game.legalMoves(from, [this, &str](Vec2s pos, Chess::MoveType t)
 	{
 		str << ' ' << pos.x << ' ' << pos.y << ' ' << static_cast <size_t> (t);
 		moves.push_back(std::make_pair(pos, t));

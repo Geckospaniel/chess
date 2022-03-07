@@ -65,10 +65,10 @@ Server::Server()
 
 			else if(cmd == "new")
 			{
-				players.emplace(conn, Player(e, players.size()));
+				players.emplace(conn, Player(game, players.size()));
 
 				std::stringstream str;
-				str << "size " << e.getBoardSize().x << ' ' << e.getBoardSize().y;
+				str << "size " << game.getBoardSize().x << ' ' << game.getBoardSize().y;
 				server.send(conn, str.str(), msg->get_opcode());
 			}
 
@@ -90,14 +90,14 @@ Server::Server()
 
 std::ostringstream Server::getTileData()
 {
-	Vec2s boardSize = e.getBoardSize();
+	Vec2s boardSize = game.getBoardSize();
 	std::ostringstream str;
 	str << "tile";
 
 	for(size_t x = 0; x < boardSize.x; x++)
 	{
 		for(size_t y = 0; y < boardSize.y; y++)
-			str << ' ' << static_cast <size_t> (e.at(x, y).piece) << ' ' << e.at(x, y).playerID;
+			str << ' ' << static_cast <size_t> (game.at(x, y).piece) << ' ' << game.at(x, y).playerID;
 	}
 
 	return str;

@@ -1,7 +1,7 @@
 #ifndef PLAYER_HEADER
 #define PLAYER_HEADER
 
-#include "../../Engine.hh"
+#include "../../chess/Game.hh"
 
 #include <iostream>
 #include <sstream>
@@ -11,8 +11,8 @@
 class Player
 {
 public:
-	Player(Engine& engine, size_t playerID)
-		: e(engine), playerID(playerID)
+	Player(Chess::Game& game, size_t playerID)
+		: game(game), playerID(playerID)
 	{
 		std::cout << "Added player " << playerID << '\n';
 	}
@@ -21,10 +21,10 @@ public:
 	std::ostringstream getLegalMoves(Vec2s from);
 
 private:
-	Engine& e;
+	Chess::Game& game;
 	size_t playerID;
 
-	std::vector <std::pair <Vec2s, MoveType>> moves;
+	std::vector <std::pair <Vec2s, Chess::MoveType>> moves;
 	Vec2s movesFrom;
 };
 

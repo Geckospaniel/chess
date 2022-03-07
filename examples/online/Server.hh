@@ -1,7 +1,7 @@
 #ifndef SERVER_HEADER
 #define SERVER_HEADER
 
-#include "../../Engine.hh"
+#include "../../chess/Game.hh"
 #include "Player.hh"
 
 #include <websocketpp/server.hpp>
@@ -18,7 +18,7 @@ public:
 	Server();
 
 private:
-	Engine e;
+	Chess::Game game;
 	websocket server;
 
 	std::ostringstream getTileData();
