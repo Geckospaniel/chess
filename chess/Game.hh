@@ -48,8 +48,9 @@ public:
 
 	void move(const Vec2s& from, const Vec2s& to);
 
-	void legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback);
 	void getChecks(const std::function <void(Vec2s)>& callback);
+	void legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback,
+					bool protectKing = true);
 
 private:
 	struct Board

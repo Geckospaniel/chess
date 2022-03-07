@@ -165,9 +165,10 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 	moveHistory.emplace_back(from, to, board.at(to));
 }
 
-void Chess::Game::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback)
+void Chess::Game::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback,
+							 bool protectKing)
 {
-	legalMoves(mainBoard, position, true, callback);
+	legalMoves(mainBoard, position, protectKing, callback);
 }
 
 void Chess::Game::getChecks(const std::function <void(Vec2s)>& callback)
@@ -186,11 +187,8 @@ void Chess::Game::legalMoves(Board& board, Vec2s position, bool protectKing,
 	(Vec2s from, Vec2s to, MoveType m)
 	{
 		//	If this move leads to checking the current player, don't reveal it
-		if(	protectKing && board.at(from).playerID == currentPlayer &&
-			leadsToCheck(board, from, to))
-		{
+		if(protectKing && leadsToCheck(board, from, to))
 			return;
-		}
 
 		callback(to, m);
 	};
