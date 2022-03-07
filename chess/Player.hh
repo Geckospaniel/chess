@@ -3,6 +3,9 @@
 
 #include "../Vector2.hh"
 
+namespace Chess
+{
+
 struct Player
 {
 	bool kingMoved = false;
@@ -22,5 +25,7 @@ struct Player
 	//	FIXME technically you could have multiple possible en passantes
 	Vec2s enPassanteCapture;
 };
+
+}
 
 #endif
