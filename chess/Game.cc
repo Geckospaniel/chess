@@ -118,11 +118,11 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 		players[currentPlayer].kingPosition = to;
 		players[currentPlayer].kingMoved = true;
 
-		//	Handle the king castling
-		if(players[currentPlayer].kingCanCastle)
-		{
-			bool kingSide = to <= from;
+		bool kingSide = to <= from;
 
+		//	Handle the king castling
+		if(players[currentPlayer].kingCanCastle[!kingSide])
+		{
 			//	Get a direction vector pointing towards the rook
 			Vec2i shift = players[currentPlayer].inverseDirection * (kingSide ? -1 : +1);
 
@@ -136,9 +136,9 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 				to = from + shift * 2;
 				move(board, rookPosition, to - shift);
 			}
-		}
 
-		players[currentPlayer].kingCanCastle = false;
+			players[currentPlayer].kingCanCastle[!kingSide] = false;
+		}
 	}
 
 	//	Check if rooks have moved
@@ -485,7 +485,7 @@ bool Chess::Game::canCastle(Board& board, Player& player, Vec2s& position, bool 
 	//	If the rook on the given side has moved, no castling can happen
 	if(player.rookMoved[queenSide])
 	{
-		player.kingCanCastle = false;
+		player.kingCanCastle[queenSide] = false;
 		return false;
 	}
 
@@ -509,12 +509,12 @@ bool Chess::Game::canCastle(Board& board, Player& player, Vec2s& position, bool 
 		if(	(i < steps - 1 && board.occupied(position)) ||
 			(leadsToCheck(board, originalPosition, position)))
 		{
-			player.kingCanCastle = false;
+			player.kingCanCastle[queenSide] = false;
 			return false;
 		}
 	}
 
-	player.kingCanCastle = true;
+	player.kingCanCastle[queenSide] = true;
 	return true;
 }
 

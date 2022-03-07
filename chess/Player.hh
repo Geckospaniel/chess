@@ -9,7 +9,7 @@ namespace Chess
 struct Player
 {
 	bool kingMoved = false;
-	bool kingCanCastle = false;
+	bool kingCanCastle[2] { false, false };
 	bool kingThreatened = false;
 	bool rookMoved[2] { false, false };
 
