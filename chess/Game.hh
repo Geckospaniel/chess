@@ -25,8 +25,7 @@ enum class PieceName
 enum class MoveType
 {
 	Move,
-	Capture,
-	Check
+	Capture
 };
 
 struct Tile
@@ -49,8 +48,8 @@ public:
 
 	void move(const Vec2s& from, const Vec2s& to);
 
-	void legalMoves(Vec2s position,
-					const std::function <void(Vec2s, MoveType)>& callback);
+	void legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback);
+	void getChecks(const std::function <void(Vec2s)>& callback);
 
 private:
 	struct Board

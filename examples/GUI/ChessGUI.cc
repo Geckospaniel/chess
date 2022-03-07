@@ -75,13 +75,23 @@ void ChessGUI::onRender()
 		}
 	}
 
+	e.getChecks([this, &tileSize](Vec2s pos)
+	{
+		window(WindowID::Main).setColor(255, 255, 0);
+
+		Vec2 origin = tileSize * pos.as <float> ();
+		window(WindowID::Main).drawBox(origin, tileSize, false, 1);
+		window(WindowID::Main).drawLine(origin, origin + tileSize);
+		window(WindowID::Main).drawLine(origin + Vec2(tileSize.x, 0.0f), origin + Vec2(0.0f, tileSize.y));
+
+	});
+
 	for(auto& cache : cachedMoves)
 	{
 		switch(cache.second)
 		{
 			case Chess::MoveType::Capture: window(WindowID::Main).setColor(255, 0, 0); break;
 			case Chess::MoveType::Move: window(WindowID::Main).setColor(0, 255, 0); break;
-			case Chess::MoveType::Check: window(WindowID::Main).setColor(255, 255, 0); break;
 		}
 
 		Vec2 origin = tileSize * cache.first.as <float> ();
@@ -113,7 +123,7 @@ void ChessGUI::onMouseClick(bool left, bool right)
 
 		for(auto& cache : cachedMoves)
 		{
-			if(cache.first == newSelection && cache.second != Chess::MoveType::Check)
+			if(cache.first == newSelection)
 			{
 				//	FIXME for some reason this condition equals true multiple times occasionally
 				e.move(selected, newSelection);

@@ -167,14 +167,16 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 
 void Chess::Game::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback)
 {
-	//	Reveal checked kings
-	for(size_t i = 0; i < players.size(); i++)
-	{
-		if(players[i].kingThreatened)
-			callback(players[i].kingPosition, MoveType::Check);
-	}
-
 	legalMoves(mainBoard, position, true, callback);
+}
+
+void Chess::Game::getChecks(const std::function <void(Vec2s)>& callback)
+{
+	for(auto& player : players)
+	{
+		if(player.kingThreatened)
+			callback(player.kingPosition);
+	}
 }
 
 void Chess::Game::legalMoves(Board& board, Vec2s position, bool protectKing,
