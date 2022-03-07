@@ -1,8 +1,8 @@
-#ifndef CHESS_HEADER
-#define CHESS_HEADER
+#ifndef CHESS_GUI_HEADER
+#define CHESS_GUI_HEADER
 
 #include "Application.hh"
-#include "../../Engine.hh"
+#include "../../chess/Game.hh"
 
 #include <vector>
 #include <utility>
@@ -12,21 +12,21 @@ enum class WindowID
 	Main
 };
 
-class Chess : public Application
+class ChessGUI : public Application
 {
 public:
-	Chess();
-	~Chess();
+	ChessGUI();
+	~ChessGUI();
 
 	void onRender() override;
 	void onMouseClick(bool left, bool right) override;
 
 private:
 	Vector2 <size_t> selected;
-	Engine e;
+	Chess::Game e;
 
 	void cacheMoves();
-	std::vector <std::pair <Vector2 <size_t>, MoveType>> cachedMoves;
+	std::vector <std::pair <Vector2 <size_t>, Chess::MoveType>> cachedMoves;
 };
 
 #endif

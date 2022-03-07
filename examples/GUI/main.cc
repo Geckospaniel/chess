@@ -1,7 +1,7 @@
-#include "Chess.hh"
+#include "ChessGUI.hh"
 
 int main()
 {
-	Chess c;
+	ChessGUI c;
 	return !c.start();
 }

@@ -1,15 +1,15 @@
-#include "Chess.hh"
+#include "ChessGUI.hh"
 #include "BitImage.hh"
 
-Chess::Chess()
+ChessGUI::ChessGUI()
 {
 	addWindow(2, 2);
 	capFPS(30);
 }
 
-Chess::~Chess() {}
+ChessGUI::~ChessGUI() {}
 
-void Chess::onRender()
+void ChessGUI::onRender()
 {
 	Vector2 <size_t> boardSize = e.getBoardSize();
 	Vec2 tileSize = Vec2(1.0f, 1.0f) / boardSize.as <float> ();
@@ -36,17 +36,17 @@ void Chess::onRender()
 				window(WindowID::Main).drawBox(tileSize * Vec2(x, y), tileSize, true, 1);
 			}
 
-			Engine::Tile current = e.at(x, y);
+			Chess::Tile current = e.at(x, y);
 			uint64_t value;	
 			
 			switch(current.piece)
 			{
-				case PieceName::Pawn: value = 13542615986929664UL; break;
-				case PieceName::King: value = 877951994586394672UL; break;
-				case PieceName::Queen: value = 227185009270878220UL; break;
-				case PieceName::Bishop: value = 9039977631055872UL; break;
-				case PieceName::Knight: value = 15657040604704768UL; break;
-				case PieceName::Rook: value = 9288468072107520UL; break;
+				case Chess::PieceName::Pawn: value = 13542615986929664UL; break;
+				case Chess::PieceName::King: value = 877951994586394672UL; break;
+				case Chess::PieceName::Queen: value = 227185009270878220UL; break;
+				case Chess::PieceName::Bishop: value = 9039977631055872UL; break;
+				case Chess::PieceName::Knight: value = 15657040604704768UL; break;
+				case Chess::PieceName::Rook: value = 9288468072107520UL; break;
 
 				default: continue;
 			}
@@ -67,9 +67,9 @@ void Chess::onRender()
 	{
 		switch(cache.second)
 		{
-			case MoveType::Capture: window(WindowID::Main).setColor(255, 0, 0); break;
-			case MoveType::Move: window(WindowID::Main).setColor(0, 255, 0); break;
-			case MoveType::Check: window(WindowID::Main).setColor(255, 255, 0); break;
+			case Chess::MoveType::Capture: window(WindowID::Main).setColor(255, 0, 0); break;
+			case Chess::MoveType::Move: window(WindowID::Main).setColor(0, 255, 0); break;
+			case Chess::MoveType::Check: window(WindowID::Main).setColor(255, 255, 0); break;
 		}
 
 		Vec2 origin = tileSize * cache.first.as <float> ();
@@ -81,16 +81,16 @@ void Chess::onRender()
 	window(WindowID::Main).render();
 }
 
-void Chess::cacheMoves()
+void ChessGUI::cacheMoves()
 {
 	cachedMoves.clear();
-	e.legalMoves(selected, [this](Vector2 <size_t> pos, MoveType type)
+	e.legalMoves(selected, [this](Vector2 <size_t> pos, Chess::MoveType type)
 	{
 		cachedMoves.push_back(std::make_pair(pos, type));
 	});
 }
 
-void Chess::onMouseClick(bool left, bool right)
+void ChessGUI::onMouseClick(bool left, bool right)
 {
 	if(left)
 	{
@@ -101,7 +101,7 @@ void Chess::onMouseClick(bool left, bool right)
 
 		for(auto& cache : cachedMoves)
 		{
-			if(cache.first == newSelection && cache.second != MoveType::Check)
+			if(cache.first == newSelection && cache.second != Chess::MoveType::Check)
 			{
 				//	FIXME for some reason this condition equals true multiple times occasionally
 				e.move(selected, newSelection);
@@ -113,9 +113,9 @@ void Chess::onMouseClick(bool left, bool right)
 		if(e.getCurrentTurn() != oldTurn)
 			return;
 
-		Engine::Tile current = e.at(newSelection.x, newSelection.y);
+		Chess::Tile current = e.at(newSelection.x, newSelection.y);
 
-		if(current.piece != PieceName::None && e.getCurrentTurn() == current.playerID)
+		if(current.piece != Chess::PieceName::None && e.getCurrentTurn() == current.playerID)
 		{
 			selected = newSelection;
 			cacheMoves();
