@@ -36,15 +36,8 @@ std::ostringstream Player::getLegalMoves(Vec2s from)
 	movesFrom = from;
 	e.legalMoves(from, [this, &str](Vec2s pos, MoveType t)
 	{
-		str << ' ' << pos.x << ' ' << pos.y << ' ';
+		str << ' ' << pos.x << ' ' << pos.y << ' ' << static_cast <size_t> (t);
 		moves.push_back(std::make_pair(pos, t));
-
-		switch(t)
-		{
-			case MoveType::Capture: str << 'C'; break;
-			case MoveType::Check: str << 'X'; break;
-			case MoveType::Move: str << 'M'; break;
-		}
 	});
 
 	return str;
