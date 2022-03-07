@@ -1,11 +1,15 @@
-#ifndef ENGINE_HEADER
-#define ENGINE_HEADER
+#ifndef CHESS_GAME_HEADER
+#define CHESS_GAME_HEADER
 
-#include "Vector2.hh"
+#include "../Vector2.hh"
+#include "Player.hh"
 
 #include <functional>
 #include <cstddef>
 #include <vector>
+
+namespace Chess
+{
 
 enum class PieceName
 {
@@ -25,18 +29,18 @@ enum class MoveType
 	Check
 };
 
-class Engine
+struct Tile
+{
+	Tile(PieceName piece, size_t id) : piece(piece), playerID(id) {}
+
+	PieceName piece;
+	size_t playerID;
+};
+
+class Game
 {
 public:
-	Engine();
-
-	struct Tile
-	{
-		Tile(PieceName piece, size_t id) : piece(piece), playerID(id) {}
-
-		PieceName piece;
-		size_t playerID;
-	};
+	Game();
 
 	Tile at(size_t x, size_t y);
 	size_t getCurrentTurn() { return currentPlayer; }
@@ -48,26 +52,6 @@ public:
 					const std::function <void(Vec2s, MoveType)>& callback);
 
 private:
-	struct Player
-	{
-		bool kingMoved = false;
-		bool kingCanCastle = false;
-		bool kingThreatened = false;
-		bool rookMoved[2] { false, false };
-
-		size_t possibleMoves;
-
-		Vec2s kingPosition;
-		Vec2i inverseDirection;
-		Vec2i pawnDirection;
-
-		Vec2s pawnSpawnStart;
-		Vec2s pawnSpawnEnd;
-	
-		//	FIXME technically you could have multiple possible en passantes
-		Vec2s enPassanteCapture;
-	};
-
 	struct Board
 	{
 		bool occupied(const Vec2s& position);
@@ -109,4 +93,6 @@ private:
 	Board mainBoard;
 };
  
+}
+
 #endif

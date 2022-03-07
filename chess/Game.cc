@@ -1,18 +1,18 @@
-#include "Engine.hh"
+#include "Game.hh"
 
 #include <cmath>
 
-const char* name(PieceName name)
+const char* name(Chess::PieceName name)
 {
 	const char* n;
 	switch(name)
 	{
-		case PieceName::Pawn: n = "Pawn"; break;
-		case PieceName::Bishop: n = "Bishop"; break;
-		case PieceName::Knight: n = "Knight"; break;
-		case PieceName::Rook: n = "Rook"; break;
-		case PieceName::King: n = "King"; break;
-		case PieceName::Queen: n = "Queen"; break;
+		case Chess::PieceName::Pawn: n = "Pawn"; break;
+		case Chess::PieceName::Bishop: n = "Bishop"; break;
+		case Chess::PieceName::Knight: n = "Knight"; break;
+		case Chess::PieceName::Rook: n = "Rook"; break;
+		case Chess::PieceName::King: n = "King"; break;
+		case Chess::PieceName::Queen: n = "Queen"; break;
 
 		default: return "";
 	}
@@ -20,7 +20,7 @@ const char* name(PieceName name)
 	return n;
 }
 
-Engine::Engine()
+Chess::Game::Game()
 {
 	mainBoard.size.x = 8;
 	mainBoard.size.y = 8;
@@ -42,7 +42,7 @@ Engine::Engine()
 	//createPlayer(kingPos4, middle);
 }
 
-void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
+void Chess::Game::createPlayer(Vec2s kingPosition, Vec2s middle)
 {
 	size_t id = players.size();
 	players.push_back({});
@@ -88,13 +88,13 @@ void Engine::createPlayer(Vec2s kingPosition, Vec2s middle)
 	}
 }
 
-Engine::Tile Engine::at(size_t x, size_t y)
+Chess::Tile Chess::Game::at(size_t x, size_t y)
 {
 	//	TODO validate position
 	return mainBoard.at(Vec2s(x, y));
 }
 
-void Engine::move(const Vec2s& from, const Vec2s& to)
+void Chess::Game::move(const Vec2s& from, const Vec2s& to)
 {
 	move(mainBoard, from, to);
 
@@ -103,7 +103,7 @@ void Engine::move(const Vec2s& from, const Vec2s& to)
 		currentPlayer = 0;
 }
 
-void Engine::move(Board& board, const Vec2s& from, Vec2s to)
+void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 {
 	/*	TODO maybe move() could take a move type as a parameter
 	 *	so that we won't have do checks with positions */
@@ -174,7 +174,7 @@ void Engine::move(Board& board, const Vec2s& from, Vec2s to)
 	moveHistory.emplace_back(from, to, board.at(to));
 }
 
-void Engine::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback)
+void Chess::Game::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback)
 {
 	//	Reveal checked kings
 	for(size_t i = 0; i < players.size(); i++)
@@ -186,7 +186,7 @@ void Engine::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveTyp
 	legalMoves(mainBoard, position, true, callback);
 }
 
-void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
+void Chess::Game::legalMoves(Board& board, Vec2s position, bool protectKing,
 						const std::function <void(Vec2s, MoveType)>& callback)
 {
 	auto show = [this, &board, &callback, protectKing]
@@ -402,7 +402,7 @@ void Engine::legalMoves(Board& board, Vec2s position, bool protectKing,
 	}
 }
 
-bool Engine::leadsToCheck(Board& board, Vec2s from, Vec2s to)
+bool Chess::Game::leadsToCheck(Board& board, Vec2s from, Vec2s to)
 {
 	//	Save the old state
 	Tile oldFromTile = board.at(from);
@@ -431,7 +431,7 @@ bool Engine::leadsToCheck(Board& board, Vec2s from, Vec2s to)
 	return result;
 }
 
-void Engine::flagThreatenedKings(Board& board, bool countLegalMoves)
+void Chess::Game::flagThreatenedKings(Board& board, bool countLegalMoves)
 {
 	//	Reset the check states
 	for(auto& player : players)
@@ -489,7 +489,7 @@ void Engine::flagThreatenedKings(Board& board, bool countLegalMoves)
 	currentPlayer = oldPlayerTurn;
 }
 
-bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queenSide)
+bool Chess::Game::canCastle(Board& board, Player& player, Vec2s& position, bool queenSide)
 {
 	//	If the rook on the given side has moved, no castling can happen
 	if(player.rookMoved[queenSide])
@@ -527,7 +527,7 @@ bool Engine::canCastle(Board& board, Player& player, Vec2s& position, bool queen
 	return true;
 }
 
-bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i direction)
+bool Chess::Game::canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i direction)
 {
 	//	Is the adjacent position inside the board
 	Vec2s adjacentPosition = position + direction;
@@ -567,17 +567,17 @@ bool Engine::canEnPassante(Board& board, Player& player, Vec2s& position, Vec2i 
 	return false;
 }
 
-Engine::Tile& Engine::Board::at(const Vec2s& position)
+Chess::Tile& Chess::Game::Board::at(const Vec2s& position)
 {
 	return data[size.x * position.y + position.x];
 }
 
-bool Engine::Board::occupied(const Vec2s& position)
+bool Chess::Game::Board::occupied(const Vec2s& position)
 {
 	return at(position).piece != PieceName::None;
 }
 
-bool Engine::Board::isInside(const Vec2s& position)
+bool Chess::Game::Board::isInside(const Vec2s& position)
 {
 	return	position >= Vec2s () && position < size;
 }
