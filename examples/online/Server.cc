@@ -40,11 +40,6 @@ Server::Server() : game(8, 8)
 				//	Cache legal moves and store them to a stringstream
 				std::ostringstream ss = player->second.getLegalMoves(legalFrom);
 				client->send(ss.str(), msg->get_opcode());
-
-				//ss = std::ostringstream(std::string());
-				//ss << "check";
-				//game.getChecks([&ss](Vec2s pos) { ss << ' ' << pos.x << ' ' << pos.y; });
-				//client->send(ss.str(), msg->get_opcode());
 			}
 
 			else if(cmd == "move")
@@ -101,7 +96,9 @@ Server::Server() : game(8, 8)
 					Vec2s positions[]
 					{
 						Vec2s(centerLeft, 0),
-						Vec2s(centerLeft, boardSize.y - 1)
+						Vec2s(centerLeft, boardSize.y - 1),
+						Vec2s(0, centerLeft),
+						Vec2s(boardSize.x - 1, centerLeft)
 					};
 				
 					//	Add a new player
