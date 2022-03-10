@@ -2,6 +2,7 @@
 #define VECTOR2_HEADER
 
 #include <cstddef>
+#include <cmath>
 
 template <typename T>
 struct Vector2
@@ -37,6 +38,7 @@ struct Vector2
 
 	template <typename N>
 	Vector2 <N> as() const { return Vector2 <N> (static_cast <N> (x), static_cast <N> (y)); }
+	Vector2 <T> abs() const { return Vector2 <T> (std::abs(x), std::abs(y)); }
 };
 
 typedef Vector2 <float> Vec2;
