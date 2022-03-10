@@ -23,6 +23,7 @@ public:
 
 private:
 	Vector2 <size_t> selected;
+	bool askPromotion = false;
 	Chess::Game e;
 
 	void cacheMoves();

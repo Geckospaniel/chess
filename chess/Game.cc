@@ -88,13 +88,24 @@ Chess::Tile Chess::Game::at(size_t x, size_t y)
 	return mainBoard.at(Vec2s(x, y));
 }
 
-void Chess::Game::move(const Vec2s& from, const Vec2s& to)
+bool Chess::Game::move(const Vec2s& from, const Vec2s& to)
 {
 	move(mainBoard, from, to);
+
+	//	Don't allow moves until promotion has been dealt with
+	if(mainBoard.waitForPromotion)
+		return false;
 
 	//	Move on to the next player
 	if(++currentPlayer >= players.size())
 		currentPlayer = 0;
+
+	return true;
+}
+
+void Chess::Game::promote(PieceName newPiece)
+{
+	promote(mainBoard, newPiece);
 }
 
 void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
@@ -181,6 +192,23 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 
 	//	Add this move to the history
 	moveHistory.emplace_back(from, to, board.at(to));
+}
+
+void Chess::Game::promote(Board& board, PieceName newPiece)
+{
+	//	TODO make sure that newPiece isn't a pawn or a king
+	board.at(board.promotionAt).piece = newPiece;
+	board.waitForPromotion = false;
+
+	//	Check if the new piece threatens a king
+	flagThreatenedKings(board, true);	
+
+	//	Add the promotion to the history
+	moveHistory.emplace_back(board.promotionAt, board.promotionAt, board.at(board.promotionAt));
+
+	//	Move on to the next player
+	if(++currentPlayer >= players.size())
+		currentPlayer = 0;
 }
 
 void Chess::Game::legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback,

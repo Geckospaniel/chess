@@ -1,7 +1,22 @@
 #include "ChessGUI.hh"
 #include "BitImage.hh"
 
-ChessGUI::ChessGUI() : e(12, 12)
+static uint64_t getPieceImage(Chess::PieceName p)
+{
+	switch(p)
+	{
+		case Chess::PieceName::Pawn: return 13542615986929664UL;
+		case Chess::PieceName::King: return 877951994586394672UL;
+		case Chess::PieceName::Queen: return 227185009270878220UL;
+		case Chess::PieceName::Bishop: return 9039977631055872UL;
+		case Chess::PieceName::Knight: return 15657040604704768UL;
+		case Chess::PieceName::Rook: return 9288468072107520UL;
+
+		case Chess::PieceName::None: return 0UL;
+	}
+}
+
+ChessGUI::ChessGUI() : e(8, 8)
 {
 	addWindow(2, 2);
 	capFPS(30);
@@ -17,8 +32,8 @@ ChessGUI::ChessGUI() : e(12, 12)
 	Vec2s middle(centerLeft, boardSize.y / 2);
 	e.addPlayer(kingPos1, middle, false);
 	e.addPlayer(kingPos2, middle, false);
-	e.addPlayer(kingPos3, middle, false);
-	e.addPlayer(kingPos4, middle, false);
+	//e.addPlayer(kingPos3, middle, false);
+	//e.addPlayer(kingPos4, middle, false);
 }
 
 ChessGUI::~ChessGUI() {}
@@ -27,9 +42,26 @@ void ChessGUI::onRender()
 {
 	Vector2 <size_t> boardSize = e.getBoardSize();
 	Vec2 tileSize = Vec2(1.0f, 1.0f) / boardSize.as <float> ();
-	window(WindowID::Main).clear(199, 172, 143);
 
-	window(WindowID::Main).setColor(110, 79, 47);
+	if(askPromotion)
+	{
+		window(WindowID::Main).clear(0, 0, 0);
+		window(WindowID::Main).setColor(255, 255, 255);
+
+		size_t start = static_cast <size_t> (Chess::PieceName::Bishop);
+		size_t end = static_cast <size_t> (Chess::PieceName::Queen);
+
+		for(size_t i = start; i <= end; i++)
+		{
+			Vec2 offset = tileSize * Vec2(i, i);
+			BitImage::render(window(WindowID::Main), offset, tileSize, getPieceImage(static_cast <Chess::PieceName> (i)));
+		}
+
+		window(WindowID::Main).render();
+		return;
+	}
+
+	window(WindowID::Main).clear(199, 172, 143);
 	bool dark = false;
 
 	Vec2 pieceSize = tileSize / 2;
@@ -51,20 +83,11 @@ void ChessGUI::onRender()
 			}
 
 			Chess::Tile current = e.at(x, y);
-			uint64_t value;	
+			uint64_t value = getPieceImage(current.piece);	
+
+			if(value == 0UL)
+				continue;
 			
-			switch(current.piece)
-			{
-				case Chess::PieceName::Pawn: value = 13542615986929664UL; break;
-				case Chess::PieceName::King: value = 877951994586394672UL; break;
-				case Chess::PieceName::Queen: value = 227185009270878220UL; break;
-				case Chess::PieceName::Bishop: value = 9039977631055872UL; break;
-				case Chess::PieceName::Knight: value = 15657040604704768UL; break;
-				case Chess::PieceName::Rook: value = 9288468072107520UL; break;
-
-				default: continue;
-			}
-
 			switch(current.playerID)
 			{
 				case 0: window(WindowID::Main).setColor(255, 255, 255); break;
@@ -119,16 +142,40 @@ void ChessGUI::onMouseClick(bool left, bool right)
 	if(left)
 	{
 		Vec2 tileSize = Vec2(1.0f, 1.0f) / e.getBoardSize().as <float> ();
-		Vector2 <size_t> newSelection = (window(WindowID::Main).getMouse() / tileSize).as <size_t> ();
 
+		//	Handle the promotion screen input
+		if(askPromotion)
+		{
+			size_t start = static_cast <size_t> (Chess::PieceName::Bishop);
+			size_t end = static_cast <size_t> (Chess::PieceName::Queen);
+
+			for(size_t i = start; i <= end; i++)
+			{
+				Vec2 offset = tileSize * Vec2(i, i);
+				Vec2 mouse = window(WindowID::Main).getMouse();
+
+				//	Was the mouse clicked inside a piece
+				if(mouse >= offset && mouse <= offset + tileSize)
+				{
+					e.promote(static_cast <Chess::PieceName> (i));
+					askPromotion = false;
+					break;
+				}
+			}
+
+			return;
+		}
+
+		Vector2 <size_t> newSelection = (window(WindowID::Main).getMouse() / tileSize).as <size_t> ();
 		size_t oldTurn = e.getCurrentTurn();
 
 		for(auto& cache : cachedMoves)
 		{
 			if(cache.first == newSelection)
 			{
-				//	FIXME for some reason this condition equals true multiple times occasionally
-				e.move(selected, newSelection);
+				if(!e.move(selected, newSelection))
+					askPromotion = true;
+
 				cacheMoves();
 				break;
 			}

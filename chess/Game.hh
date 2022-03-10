@@ -45,8 +45,14 @@ public:
 	Tile at(size_t x, size_t y);
 	size_t getCurrentTurn() { return currentPlayer; }
 	Vec2s getBoardSize() { return mainBoard.size; }
+	Vec2s getPromotion() { return mainBoard.promotionAt; }
 
-	void move(const Vec2s& from, const Vec2s& to);
+	/*	move() moves whatever is at tile "from" to tile
+	 *	"to". It does not handle turns. Result value will
+	 *	false if promotion should be handled by calling promote() */
+	bool move(const Vec2s& from, const Vec2s& to);
+
+	void promote(PieceName newPiece);
 
 	void getChecks(const std::function <void(Vec2s)>& callback);
 	void legalMoves(Vec2s position, const std::function <void(Vec2s, MoveType)>& callback,
@@ -89,6 +95,7 @@ private:
 					const std::function <void(Vec2s, MoveType)>& callback);
 
 	void move(Board& board, const Vec2s& from, Vec2s to);
+	void promote(Board& board, PieceName newPiece);
 
 	std::vector <Player> players;
 	std::vector <HistoryEntry> moveHistory;
