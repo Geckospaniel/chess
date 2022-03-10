@@ -53,13 +53,16 @@ void Chess::Game::createPlayer(Vec2s kingPosition, Vec2s middle)
 	if(player.inverseDirection.x < 0) player.inverseDirection.x = -player.inverseDirection.x;
 	else if(player.inverseDirection.y < 0) player.inverseDirection.y = -player.inverseDirection.y;
 
-	//	Define a line where the pawns spawn. This is used to determine if they can move 2 spaces
+	/*	Define a line where the pawns spawn. This is used to determine if
+	 *	a pawn can move 2 spaces or if en passante can happen */
 	player.pawnSpawnStart = kingPosition + player.pawnDirection + (player.inverseDirection * -3);
 	player.pawnSpawnEnd = player.pawnSpawnStart + (player.inverseDirection * 7);
 
 	//	Pawns
 	for(size_t x = 0; x < 8; x++)
 		mainBoard.at(player.pawnSpawnStart + (player.inverseDirection * x)) = Tile(PieceName::Pawn, id);
+
+	//	TODO In 4-player chess the queens should appear on tiles that share the same color
 
 	//	King
 	mainBoard.at(kingPosition) = Tile(PieceName::King, id);
@@ -89,7 +92,7 @@ void Chess::Game::move(const Vec2s& from, const Vec2s& to)
 {
 	move(mainBoard, from, to);
 
-	//	Update the current player to the next
+	//	Move on to the next player
 	if(++currentPlayer >= players.size())
 		currentPlayer = 0;
 }
