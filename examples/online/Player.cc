@@ -52,11 +52,17 @@ std::ostringstream Player::getLegalMoves(Vec2s from)
 std::ostringstream Player::getView()
 {
 	std::ostringstream str;
-	str << "view 0 ";
+	str << "view";
 
-	//	Perform black magic to tell the player in which angle to look at the board
-	//	FIXME Players on the sides are flipped
-	str << (player->pawnDirection.y > 0 ? game.getBoardSize().y - 1 : 0);
+	bool atBottom = player->pawnDirection.y < 0 || player->pawnDirection.x < 0;
+	
+	//	TODO fine tuning to view angles
+
+	//	If this player is at the bottom in board-space, the king should be on the right
+	str << ' ' << (atBottom ? 0 : game.getBoardSize().x - 1);
+
+	//	Always have the player's pieces on the bottom on the screen
+	str << ' ' << (atBottom ? 0 : game.getBoardSize().y - 1);
 	str << ' ' << (player->pawnDirection.y == 0);
 
 	return str;
