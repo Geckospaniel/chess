@@ -113,6 +113,21 @@ void Chess::Game::move(Board& board, const Vec2s& from, Vec2s to)
 			//	Passing 2 of the same coordinate to move will make the tile empty
 			move(board, players[currentPlayer].enPassanteCapture, players[currentPlayer].enPassanteCapture);
 		}
+
+		//	When only the pawn direction is accounted for, where is the pawn?
+		Vec2s pawnProgress = to * players[currentPlayer].pawnDirection.abs();
+		Vec2s pawnGoal(0, 0);
+
+		//	If the pawn direction isn't negative, the goal is on the other side of the board
+		if(players[currentPlayer].pawnDirection >= Vec2i())
+			pawnGoal = (board.size - Vec2s(1, 1)) * players[currentPlayer].pawnDirection.abs();
+
+		//	If the pawn has reached the other side of the board, start waiting for promote()
+		if(pawnProgress == pawnGoal)
+		{
+			board.promotionAt = to;
+			board.waitForPromotion = true;
+		}
 	}
 
 	//	Update the king position and handle castling

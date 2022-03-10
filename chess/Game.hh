@@ -61,6 +61,9 @@ private:
 		Tile& at(const Vec2s& position);
 		std::vector <Tile> data;
 
+		bool waitForPromotion = false;
+		Vec2s promotionAt;
+
 		Vec2s size;
 	};
 
