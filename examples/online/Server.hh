@@ -20,6 +20,7 @@ public:
 private:
 	std::ostringstream getTileData();
 
+	bool waitForPromotion = false;
 	Chess::Game game;
 	websocket server;
 

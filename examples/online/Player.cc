@@ -1,26 +1,28 @@
 #include "Player.hh"
 
-bool Player::move(Vec2s to)
+MoveResult Player::move(Vec2s to)
 {
 	//	Forbid other players from moving pieces owned by this player
 	if(game.at(movesFrom.x, movesFrom.y).playerID != playerID)
-		return false;
+		return MoveResult::NoMove;
 
 	//	Forbid moving pieces when it's not this player's turn
 	if(game.getCurrentTurn() != playerID)
-		return false;
+		return MoveResult::NoMove;
 
 	//	Is the given move found in the cache
 	for(auto& move : moves)
 	{
 		if(to == move.first)
 		{
-			game.move(movesFrom, to);
-			return true;
+			if(!game.move(movesFrom, to))
+				return MoveResult::Promotion;
+
+			return MoveResult::Moved;
 		}
 	}
 
-	return false;
+	return MoveResult::NoMove;
 }
 
 std::ostringstream Player::getLegalMoves(Vec2s from)

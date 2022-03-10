@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-Server::Server() : game(8, 8)
+Server::Server() : game(12, 8)
 {
 	server.set_access_channels(websocketpp::log::alevel::all);
 	server.clear_access_channels(websocketpp::log::alevel::frame_payload);
@@ -49,10 +49,59 @@ Server::Server() : game(8, 8)
 				received >> moveTo.y;
 
 				//	Can a move happen?
-				if(players.find(conn)->second.move(moveTo))
+				MoveResult result = players.find(conn)->second.move(moveTo);
+
+				//	Move happened
+				if(result == MoveResult::Moved)
 				{
 					//	Inform the player that the given move happened
 					server.send(conn, "move", msg->get_opcode());
+
+					std::ostringstream tileData = getTileData();
+					std::ostringstream checks;
+
+					checks << "check";
+					game.getChecks([&checks](Vec2s pos) { checks << ' ' << pos.x << ' ' << pos.y; });
+
+					//	Send each player new tile and check data
+					for(auto& player : players)
+					{
+						server.send(player.first, tileData.str(), msg->get_opcode());
+						server.send(player.first, checks.str(), msg->get_opcode());
+					}
+				}
+
+				//	Move happened and it led to a promotion
+				else if(result == MoveResult::Promotion)
+				{
+					waitForPromotion = true;
+					std::ostringstream promotion;
+					promotion << "promote " << game.getPromotion().x << ' ' << game.getPromotion().y;
+					server.send(conn, promotion.str(), msg->get_opcode());
+				}
+			}
+
+			else if(cmd == "promote")
+			{
+				Vec2s promotionAt = game.getPromotion();
+
+				//	Is a promotion possible and is the correct player trying to promote
+				if(!waitForPromotion ||
+					players.find(conn)->second.playerID != game.at(promotionAt.x, promotionAt.y).playerID)
+				{
+					//	TODO Punish the player for trying to promote when it's not possible >:)
+					std::cout << "ILLEGAL PROMOTION\n";
+				}
+
+				else
+				{
+					size_t newPiece;
+					received >> newPiece;
+					std::cout << "PROMOTE TO " << newPiece << "\n";
+
+					//	Promote the piece to whatever the player said
+					game.promote(static_cast <Chess::PieceName> (newPiece));
+					waitForPromotion = false;
 
 					std::ostringstream tileData = getTileData();
 					std::ostringstream checks;
