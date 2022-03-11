@@ -48,8 +48,8 @@ public:
 	Vec2s getPromotion() { return mainBoard.promotionAt; }
 
 	/*	move() moves whatever is at tile "from" to tile
-	 *	"to". It does not handle turns. Result value will
-	 *	false if promotion should be handled by calling promote() */
+	 *	"to". It does not check if the given piece should move.
+	 *	Result value will false if promotion should be handled by calling promote() */
 	bool move(const Vec2s& from, const Vec2s& to);
 
 	void promote(PieceName newPiece);
