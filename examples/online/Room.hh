@@ -26,12 +26,16 @@ public:
 	bool connectionHere(Connection& conn);
 	void addConnection(Connection& conn);
 
+	std::ostringstream getStatus();
+
 private:
 	std::ostringstream getTileData();
 	Websocket& server;
 	Chess::Game game;
 
+	size_t maxPlayers = 2;
 	bool waitForPromotion = false;
+
     std::map <Connection, Player, std::owner_less <Connection>> users;
 };
 

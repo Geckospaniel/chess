@@ -28,8 +28,9 @@ Server::Server()
 				std::ostringstream roomData;
 				roomData << "list";
 
+				//	Get the name and player info of each room
 				for(auto& room : rooms)
-					roomData << ' ' << room.first;
+					roomData << ' ' << room.first << ' ' << room.second.getStatus().str();
 
 				server.send(conn, roomData.str(), websocketpp::frame::opcode::text);
 			}

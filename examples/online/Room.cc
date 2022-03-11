@@ -114,8 +114,8 @@ void Room::addConnection(Connection& conn)
 	str << users.size();
 	server.send(conn, str.str(), websocketpp::frame::opcode::text);
 
-	//	TODO have the player limit as a variable
-	if(users.size() < 2)
+	//	Can new players be added?
+	if(users.size() < maxPlayers)
 	{
 		//	Find the middle point of the board
 		size_t centerLeft = boardSize.x / 2 - 1;
@@ -146,6 +146,7 @@ void Room::addConnection(Connection& conn)
 		//	TODO Wait for all players to connect before starting the game
 	}
 
+	//	New players couldn't be added so add the user as a spectator
 	else
 	{
 		//	Send data about the tiles to new spectators
@@ -159,6 +160,15 @@ void Room::addConnection(Connection& conn)
 		game.getChecks([&checks](Vec2s pos) { checks << ' ' << pos.x << ' ' << pos.y; });
 		server.send(conn, checks.str(), websocketpp::frame::opcode::text);
 	}
+}
+
+std::ostringstream Room::getStatus()
+{
+	//	Return user count that doesn't include spectators and maximum player count
+	std::ostringstream ss;
+	ss << (users.size() > maxPlayers ? maxPlayers : users.size()) << ' ' << maxPlayers;
+
+	return ss;
 }
 
 std::ostringstream Room::getTileData()
