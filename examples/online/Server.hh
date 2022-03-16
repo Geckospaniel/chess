@@ -2,6 +2,7 @@
 #define SERVER_HEADER
 
 #include "Room.hh"
+#include "optionparser/OptionParser.hh"
 
 #include <unordered_map>
 #include <string>
@@ -9,7 +10,7 @@
 class Server
 {
 public:
-	Server();
+	Server(OptionParser& opt);
 
 private:
 	Room* findRoom(Connection& conn);

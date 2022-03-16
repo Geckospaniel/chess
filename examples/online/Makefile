@@ -6,11 +6,13 @@ OBJECT_RELEASE	=	$(addprefix obj/release/,$(addsuffix .o,$(SOURCE)))
 
 debug:	obj/ $(OBJECT_DEBUG)
 	make -C ../../chess debug
-	@g++ -o x $(OBJECT_DEBUG) ../../chess/obj/debug/*.cc.o
+	make -C optionparser
+	@g++ -o x $(OBJECT_DEBUG) ../../chess/obj/debug/*.cc.o optionparser/obj/debug/*.cc.o
 
 release:	obj/ $(OBJECT_RELEASE)
 	make -C ../../chess release
-	@g++ -o x $(OBJECT_RELEASE) ../../chess/obj/release/*.cc.o
+	make -C optionparser
+	@g++ -o x $(OBJECT_RELEASE) ../../chess/obj/release/*.cc.o optionparser/obj/debug/*.cc.o
 
 obj/debug/%.cc.o:	%.cc $(HEADER)
 	@echo "Building $< in debug mode"

@@ -1,6 +1,7 @@
 #include "Server.hh"
 
-int main()
+int main(int argc, char** argv)
 {
-	Server s;
+	OptionParser opt(argc, argv);
+	Server s(opt);
 }

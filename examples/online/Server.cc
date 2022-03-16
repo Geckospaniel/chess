@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-Server::Server()
+Server::Server(OptionParser& opt)
 {
 	server.set_access_channels(websocketpp::log::alevel::all);
 	server.clear_access_channels(websocketpp::log::alevel::frame_payload);
@@ -88,8 +88,18 @@ Server::Server()
 		}
 	});
 
+	unsigned port = 9002;
+	auto portOpt = opt.describe("port", 'p', "The port to listen on", true);
+
+	//	Stop if invalid options are found
+	if(opt.undescribed())
+		return;
+
+	//	If it exists, use the port given by the user
+	opt.find(portOpt, port);
+
 	server.set_reuse_addr(true);
-	server.listen(9002);
+	server.listen(port);
 	server.start_accept();
 	server.run();
 }
